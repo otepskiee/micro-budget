@@ -1,0 +1,9 @@
+# build artifacts (index.html is committed intentionally; everything under build/ is derivable)
+build/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

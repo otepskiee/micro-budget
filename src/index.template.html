@@ -1,0 +1,804 @@
+<style>
+/* ============================================================
+   MICRO BUDGET — "The Ledger-Tape" concept design
+   One continuous thermal receipt-tape. Two-temperature system:
+   teal = confirmed · amber = recall/gap · red = alarm.
+   Flat & printed: no shadows, no glows, no gradients, no textures.
+   ============================================================ */
+
+/*__FONTS__*/
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;color-scheme:light;background:#E3E5DE}
+body{margin:0}
+
+:root{
+  --paper:#E3E5DE;      /* thermal tape ground (cool green-grey) */
+  --paper-lit:#EDEEE8;  /* fresh print / device screen interior */
+  --ink:#211C15;        /* brown-black print ink */
+  --carbon:#5E5A4F;     /* muted secondary (darkened for contrast) */
+  --carbon-soft:#8A8578;/* faint dots / disabled */
+  --teal:#0F6B62;       /* CONFIRMED */
+  --teal-deep:#0B4F48;
+  --amber:#E79A2E;      /* RECALL / gap fill */
+  --amber-ink:#85500F;  /* amber as TEXT on paper — AA (>=4.5:1) on paper */
+  --red:#B23520;        /* ALARM */
+  --manila:#D6CBB4;     /* inset slip panels only */
+  --rule:#211C15;
+  --hair:rgba(33,28,21,.22);
+
+  --serif:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --ui:'Hanken Grotesk',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Fragment Mono',ui-monospace,'Cascadia Code','Consolas',monospace;
+
+  --maxw:1080px;
+}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--ui);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+
+/* ---- shared type helpers ---- */
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--carbon)}
+.ritual{font-family:var(--serif);font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:.95}
+.fig{font-family:var(--mono);font-feature-settings:'tnum' 1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tl{font-family:var(--mono);color:var(--carbon);font-size:.82em;letter-spacing:.02em}
+.teal{color:var(--teal)} .amberink{color:var(--amber-ink)} .red{color:var(--red)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ---- page frame ---- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.tape-edge{display:block;width:100%;height:14px;color:var(--paper)}
+.tape-edge svg{display:block;width:100%;height:14px}
+.tape-edge--btm{transform:scaleY(-1)}
+
+/* perforation divider */
+.perf{display:flex;align-items:center;gap:14px;margin:clamp(40px,7vw,84px) 0;color:var(--carbon)}
+.perf::before,.perf::after{content:"";flex:1;height:0;border-top:1.5px dashed var(--hair)}
+.perf__lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+.perf__lbl svg{width:15px;height:15px;opacity:.7}
+
+/* ============ MASTHEAD ============ */
+.mast{padding-top:clamp(24px,4vw,44px)}
+.mast__top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.brand__mark{width:40px;height:52px;flex:0 0 auto}
+.brand__name{font-family:var(--serif);font-weight:800;font-size:clamp(1.5rem,4.6vw,2.15rem);letter-spacing:.04em;text-transform:uppercase;line-height:.9}
+.brand__sub{font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--carbon);margin-top:4px}
+.mast__meta{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;color:var(--carbon);text-align:right;line-height:1.7}
+.mast__meta b{color:var(--ink);font-weight:400}
+
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,5vw,64px);align-items:center;margin-top:clamp(30px,5vw,60px)}
+.hero__thesis{font-family:var(--serif);font-weight:800;text-transform:none;letter-spacing:-.01em;line-height:1.02;font-size:clamp(2rem,5.4vw,3.4rem);margin:0}
+.hero__thesis .q{color:#6E6A5B}
+.hero__lede{font-size:clamp(1rem,1.5vw,1.15rem);color:var(--ink);max-width:34ch;margin:20px 0 0}
+.hero__lede b{color:var(--amber-ink);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:26px}
+.legend__i{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.74rem;letter-spacing:.03em}
+.swatch{width:13px;height:13px;flex:0 0 auto;border:1.5px solid var(--ink)}
+.swatch--teal{background:var(--teal)} .swatch--amber{background:var(--amber)} .swatch--red{background:var(--red)}
+.hero__note{margin-top:22px;font-family:var(--ui);font-size:.86rem;color:var(--carbon);display:flex;align-items:center;gap:9px}
+.hero__note svg{width:16px;height:16px;flex:0 0 auto;color:var(--teal)}
+
+/* ============ DEVICE ============ */
+.device{
+  width:min(340px,86vw);
+  border:2px solid var(--ink);
+  border-radius:30px;
+  background:var(--paper-lit);
+  padding:9px;
+  margin:0 auto;
+  container-type:inline-size;
+}
+.device--wide{width:min(360px,90vw)}
+.screen{
+  border:1px solid var(--hair);
+  border-radius:22px;
+  background:var(--paper-lit);
+  overflow:hidden;
+  position:relative;
+}
+.app{font-size:3.95cqi;line-height:1.42;color:var(--ink)}
+@supports not (font-size:1cqi){ .app{font-size:13.4px} }
+
+/* status bar */
+.status{display:flex;justify-content:space-between;align-items:center;padding:.7em 1.25em .35em;font-family:var(--mono);font-size:.82em;letter-spacing:.02em;color:var(--ink)}
+.status__r{display:flex;align-items:center;gap:.5em}
+.status__r svg{width:1.15em;height:1.15em}
+
+/* app header (trip / screen title) */
+.ah{padding:.15em 1.25em .55em}
+.ah__title{font-family:var(--serif);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:1.72em;line-height:.95;display:flex;align-items:baseline;gap:.5em}
+.ah__title .stamp{margin-left:auto}
+.ah__meta{font-family:var(--mono);font-size:.8em;letter-spacing:.05em;color:var(--carbon);margin-top:.35em;display:flex;gap:.9em;flex-wrap:wrap}
+.ah__rule{height:0;border-top:1.5px solid var(--ink);margin:.6em 0 0}
+.ah__rule--dot{border-top:1.5px dotted var(--hair)}
+
+.subhead{display:flex;justify-content:space-between;align-items:baseline;padding:.7em 1.25em .1em;gap:1em}
+.subhead__l{font-family:var(--mono);font-size:.82em;letter-spacing:.04em;color:var(--carbon)}
+.subhead__r{font-family:var(--mono);font-size:.82em;color:var(--carbon)}
+
+/* stamp chip */
+.stamp{display:inline-flex;align-items:center;gap:.35em;font-family:var(--mono);font-size:.5em;letter-spacing:.12em;text-transform:uppercase;border:1.4px solid currentColor;padding:.18em .5em;border-radius:3px;line-height:1;transform:rotate(-3deg);vertical-align:middle}
+.stamp--teal{color:var(--teal)} .stamp--amber{color:var(--amber-ink)} .stamp--red{color:var(--red)} .stamp--ink{color:var(--carbon)}
+
+/* ===== ledger (the trail-tape) ===== */
+.ledger{padding:.5em 1.25em .2em;position:relative}
+.row{position:relative;padding:.62em 0 .62em 2.35em;min-height:2.1em}
+.row+.row{border-top:0}
+.row__seg{position:absolute;left:.62em;top:0;bottom:0;width:2px;background:var(--ink)}
+.row:first-child .row__seg{top:1.15em}
+.row:last-child .row__seg{bottom:calc(100% - 1.15em)}
+.row__node{position:absolute;left:calc(.62em - 5px);top:calc(1.15em - 6px);width:12px;height:12px;border-radius:50%;background:var(--paper-lit);border:2px solid var(--ink);z-index:2}
+.row--done .row__node{background:var(--ink)}
+.row--now .row__node{border-color:var(--teal);background:var(--paper-lit)}
+.row--now .row__node::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--teal)}
+.row__head{display:flex;align-items:baseline;gap:.6em}
+.row__time{font-family:var(--mono);font-size:.86em;color:var(--carbon);flex:0 0 auto}
+.row__name{font-weight:600;font-size:1em}
+.row__amt{margin-left:auto;text-align:right;flex:0 0 auto;white-space:nowrap}
+.row__amt .fig{font-size:.95em}
+.row__amt .fig.sub{display:block;font-size:.82em;color:var(--carbon);letter-spacing:0}
+.row__sub{display:flex;align-items:center;gap:.5em;margin-top:.15em;color:var(--carbon);font-size:.82em}
+.row__sub svg{width:1.05em;height:1.05em;flex:0 0 auto}
+.row__sub .ok{color:var(--teal);display:inline-flex;align-items:center;gap:.3em}
+
+/* ===== the GAP (break in the tape) ===== */
+.row--gap{padding-top:.5em;padding-bottom:.5em}
+.row--gap .row__seg{border-left:2px dashed var(--amber);background:none;width:0;left:.62em}
+.row--gap .row__node{border-color:var(--amber);border-style:solid;background:var(--paper-lit)}
+.gaprule{display:flex;align-items:center;gap:.6em;margin:.15em 0 .5em;color:var(--amber-ink)}
+.gaprule::before{content:"";width:.9em;height:.9em;flex:0 0 auto;border:2px solid var(--amber);border-radius:50%}
+.gaprule__t{font-family:var(--ui);font-weight:500;font-size:.86em;letter-spacing:0}
+.gaprule__line{flex:1;height:0;border-top:2px dashed var(--amber)}
+.gap__ask{font-weight:700;color:var(--amber-ink);font-size:.98em;margin:.1em 0 .5em}
+.stubs{display:flex;gap:.5em;flex-wrap:wrap}
+.stub{font-family:var(--ui);font-weight:700;font-size:.86em;padding:.4em .8em;border:1.6px solid var(--amber-ink);color:var(--amber-ink);background:transparent;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:.35em;line-height:1}
+.stub svg{width:1.05em;height:1.05em}
+.stub--fill{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.stub--ghost{border-color:var(--carbon);color:var(--carbon)}
+.stub:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px}
+
+/* sealed gap state */
+.row--gap.is-sealed .row__seg{border-left:2px solid var(--ink);border-color:var(--ink)}
+.row--gap.is-sealed .row__node{border-color:var(--teal);background:var(--paper-lit)}
+.row--gap.is-sealed .gaprule,.row--gap.is-sealed .gap__ask,.row--gap.is-sealed .stubs{display:none}
+.row--gap .sealed{display:none}
+.row--gap.is-sealed .sealed{display:block}
+@media(prefers-reduced-motion:no-preference){
+  .row--gap:not(.is-sealed) .gaprule::before{animation:breath 1.9s ease-in-out infinite}
+  .row--gap:not(.is-sealed) .row__node{animation:breath 1.9s ease-in-out infinite}
+}
+@keyframes breath{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* slip panel (money changer / ATM / receipt) */
+.slip{background:var(--manila);border:1.5px solid var(--ink);border-radius:4px;padding:.7em .85em;margin:.6em 1.25em}
+.slip__h{display:flex;align-items:center;gap:.5em;font-family:var(--mono);font-size:.74em;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin-bottom:.4em}
+.slip__h svg{width:1.2em;height:1.2em}
+.slip__row{display:flex;justify-content:space-between;gap:1em;font-size:.9em;padding:.1em 0}
+.slip__row .fig{font-size:.92em}
+.slip .tl{color:#48443B}
+.slip .stamp--teal{color:var(--teal-deep)}
+.slip .stamp--ink{color:var(--ink)}
+.slip__row .fig.sub{color:#4A463C;font-size:.8em;margin-left:.5em}
+.slip__rule{height:0;border-top:1.4px solid rgba(33,28,21,.28);margin:.35em 0}
+
+/* leader-dot money rows (generic ledger, e.g. today's list) */
+.lrow{display:flex;align-items:baseline;gap:.6em;padding:.42em 0;font-size:1em}
+.lrow+.lrow{border-top:1px dotted var(--hair)}
+.lrow__t{font-family:var(--mono);font-size:.84em;color:var(--carbon);flex:0 0 auto;width:3.4em}
+.lrow__n{font-weight:600}
+.lrow__cat{font-family:var(--mono);font-size:.72em;color:var(--carbon);border:1.2px solid var(--hair);padding:.05em .4em;border-radius:3px}
+.lrow__lead{flex:1;border-bottom:1.5px dotted var(--hair);transform:translateY(-.18em)}
+.lrow__a{flex:0 0 auto}
+
+/* budget line (distance, not donut) */
+.budget{padding:.7em 1.25em .3em}
+.budget__top{display:flex;justify-content:space-between;align-items:flex-end;gap:1em}
+.budget__safe{font-family:var(--mono);font-weight:400;font-size:1.4em;letter-spacing:-.01em;line-height:1.05;color:var(--teal)}
+.budget__safe small{display:block;font-family:var(--mono);font-size:.4em;letter-spacing:.12em;text-transform:uppercase;color:var(--carbon);font-weight:400;margin-bottom:.3em}
+.budget__meta{text-align:right;font-family:var(--mono);font-size:.82em;color:var(--carbon);line-height:1.5}
+.budget__meta b{color:var(--ink);font-weight:400}
+.bline{position:relative;height:26px;margin:1em 0 .2em}
+.bline__track{position:absolute;top:11px;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,var(--ink) 0 6px,transparent 6px 10px)}
+.bline__fill{position:absolute;top:10px;left:0;height:4px;background:var(--ink)}
+.bline__you{position:absolute;top:2px;width:2px;height:22px;background:var(--teal)}
+.bline__you::after{content:"NOW";position:absolute;top:-1.15em;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.62em;letter-spacing:.1em;color:var(--teal)}
+.bline__end{position:absolute;top:2px;right:0;width:2px;height:22px;background:var(--carbon)}
+.bline__spend{position:absolute;top:-1px;width:2px;height:8px;background:var(--red)}
+.bline__cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72em;color:var(--carbon);margin-top:.1em}
+
+/* category bars */
+.cats{padding:.4em 1.25em .3em}
+.cat{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.7em;padding:.34em 0}
+.cat+.cat{border-top:1px dotted var(--hair)}
+.cat__n{font-weight:600;font-size:.95em}
+.cat__bar{height:7px;border:1.4px solid var(--ink);position:relative;background:var(--paper-lit)}
+.cat__bar i{position:absolute;top:0;left:0;bottom:0;background:var(--ink);display:block}
+.cat__bar.warn i{background:var(--amber)}
+.cat__bar.over i{background:var(--red)}
+.cat__v{font-family:var(--mono);font-size:.8em;color:var(--carbon);white-space:nowrap}
+.cat__v b{color:var(--ink);font-weight:400}
+.cflag{display:inline-block;font-family:var(--mono);font-size:.82em;font-weight:400;line-height:1;border:1.3px solid currentColor;border-radius:2px;padding:.06em .3em .12em;margin-right:.35em;vertical-align:.05em}
+.cflag.warn{color:var(--amber-ink)} .cflag.over{color:var(--red)}
+.cats__h{font-family:var(--mono);font-size:.68em;letter-spacing:.1em;text-transform:uppercase;color:var(--carbon);padding:.1em 1.25em .1em;display:flex;justify-content:space-between}
+
+/* amount entry (add screen) */
+.entry{padding:1em 1.25em .4em;text-align:center}
+.entry__amt{font-family:var(--mono);font-size:2.1em;letter-spacing:-.01em;color:var(--ink);position:relative;display:inline-block}
+.entry__amt .car{display:inline-block;width:2px;height:1em;background:var(--ink);vertical-align:-.12em;margin-left:.06em}
+@media(prefers-reduced-motion:no-preference){.entry__amt .car{animation:blink 1.05s steps(1) infinite}}
+@keyframes blink{50%{opacity:0}}
+.entry__conv{margin-top:.5em}
+.entry__peso{font-family:var(--mono);font-weight:400;font-size:1.55em;letter-spacing:-.01em;color:var(--teal);line-height:1}
+.entry__rate{font-family:var(--mono);font-size:.78em;color:var(--carbon);margin-top:.35em}
+.entry__derive{font-family:var(--ui);font-size:.82em;color:var(--amber-ink);margin-top:.3em;display:inline-flex;align-items:center;gap:.4em;flex-wrap:wrap;justify-content:center}
+.entry__derive svg{width:1.1em;height:1.1em}
+
+/* field rows */
+.fields{padding:.3em 1.25em}
+.field{display:flex;align-items:center;gap:.6em;padding:.5em 0;border-top:1px dotted var(--hair)}
+.field__k{font-family:var(--mono);font-size:.76em;letter-spacing:.08em;text-transform:uppercase;color:var(--carbon);width:5.4em;flex:0 0 auto}
+.field__v{font-weight:600;display:flex;align-items:center;gap:.45em;flex-wrap:wrap}
+.field__v svg{width:1.1em;height:1.1em;color:var(--teal)}
+.pill{font-family:var(--mono);font-size:.82em;font-weight:400;border:1.4px solid var(--ink);border-radius:3px;padding:.1em .5em}
+
+/* settlement net */
+.net{margin:.9em 1.25em;border-top:2px solid var(--amber-ink);border-bottom:2px solid var(--amber-ink);padding:.7em 0;position:relative}
+.net__k{font-family:var(--mono);font-size:.76em;letter-spacing:.1em;text-transform:uppercase;color:var(--amber-ink)}
+.net__v{font-family:var(--mono);font-weight:400;font-size:1.5em;letter-spacing:-.01em;color:var(--amber-ink);line-height:1.05;margin-top:.15em;display:flex;align-items:baseline;gap:.5em;flex-wrap:wrap}
+.net__sub{font-family:var(--ui);font-size:.82em;color:var(--carbon);margin-top:.4em}
+
+/* app cta button */
+.cta{margin:.5em 1.25em 1.15em;display:flex;gap:.6em}
+.btn{flex:1;font-family:var(--ui);font-weight:700;font-size:.95em;padding:.7em 1em;border:1.8px solid var(--ink);border-radius:5px;background:var(--ink);color:var(--paper-lit);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.4em;line-height:1}
+.btn svg{width:1.1em;height:1.1em}
+.btn--ghost{background:transparent;color:var(--ink)}
+.btn:focus-visible{outline:2.5px solid var(--teal);outline-offset:2px}
+
+/* day total footer */
+.total{margin-top:.3em;border-top:2px solid var(--ink);padding:.7em 1.25em .3em}
+.total__row{display:flex;justify-content:space-between;align-items:baseline;gap:1em}
+.total__k{font-family:var(--serif);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:1.1em}
+.total__v{text-align:right}
+.total__v .fig{font-size:1.15em}
+.total__v .fig.sub{display:block;font-size:.85em;color:var(--carbon)}
+.total__budget{font-family:var(--mono);font-size:.78em;color:var(--teal);margin-top:.3em;display:flex;align-items:center;gap:.4em;justify-content:flex-end}
+.total__budget svg{width:1.05em;height:1.05em}
+
+/* ambient banner */
+.banner{margin:.5em 1.25em;display:flex;align-items:center;gap:.6em;border:1.5px dashed var(--amber-ink);border-radius:4px;padding:.55em .75em;font-size:.86em;color:var(--amber-ink)}
+.banner svg{width:1.25em;height:1.25em;flex:0 0 auto}
+.banner b{font-weight:700}
+
+/* print-head sweep + row printing (phone 1) */
+.app--print .row,.app--print .total{opacity:1}
+@media(prefers-reduced-motion:no-preference){
+  .app--print.is-printing .prow{opacity:0;animation:printIn .42s ease-out forwards;animation-delay:calc(var(--i,0)*.14s + .15s)}
+  .app--print.is-printing .printhead{position:absolute;left:0;right:0;top:0;height:2px;background:var(--ink);opacity:.55;z-index:5;animation:sweep 2.2s ease-in-out forwards}
+}
+@keyframes printIn{from{opacity:0;clip-path:inset(0 0 100% 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes sweep{0%{top:2.5em;opacity:0}8%{opacity:.55}92%{opacity:.55}100%{top:100%;opacity:0}}
+
+/* ============ FEATURE SECTIONS ============ */
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,68px);align-items:center}
+.feat+.feat{margin-top:clamp(52px,8vw,104px)}
+.feat--flip .feat__media{order:2}
+.feat__copy{max-width:40ch}
+.feat__no{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:var(--carbon);display:flex;align-items:center;gap:.7em;margin-bottom:1.1em}
+.feat__no::after{content:"";flex:1;height:0;border-top:1.5px solid var(--hair);max-width:80px}
+.feat__h{font-family:var(--serif);font-weight:800;font-size:clamp(1.5rem,3vw,2.05rem);line-height:1.02;letter-spacing:-.01em;margin:0 0 .5em;text-transform:none}
+.feat__p{font-size:1.02rem;color:var(--ink);margin:0 0 1em}
+.feat__p b{color:var(--amber-ink)}
+.feat__list{list-style:none;margin:1.1em 0 0;padding:0}
+.feat__list li{position:relative;padding:.4em 0 .4em 1.7em;border-top:1px dotted var(--hair);font-size:.94rem}
+.feat__list li svg{position:absolute;left:0;top:.62em;width:1.1em;height:1.1em;color:var(--teal)}
+.feat__list li b{font-weight:700}
+.feat__cap{font-family:var(--ui);font-size:.8rem;color:var(--carbon);text-align:center;margin-top:1.1em;letter-spacing:.02em}
+
+/* annotation on hero phone */
+.anno{list-style:none;margin:1.4em 0 0;padding:0;display:grid;gap:.5em}
+.anno li{display:flex;gap:.7em;align-items:flex-start;font-size:.9rem;color:var(--carbon)}
+.anno .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;border:1.4px solid var(--ink);color:var(--ink);border-radius:3px;padding:.12em .45em;flex:0 0 auto;line-height:1.3}
+.anno .k.a{color:var(--amber-ink);border-color:var(--amber-ink)}
+.anno .k.t{color:var(--teal);border-color:var(--teal)}
+
+/* ============ DESIGN SYSTEM ============ */
+.ds__h{font-family:var(--serif);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(1.3rem,3vw,1.8rem);margin:0 0 .3em}
+.ds__lede{font-family:var(--ui);font-size:.95rem;color:var(--carbon);margin:0 0 2em}
+.ds__grid{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(28px,5vw,56px)}
+.ds__block+.ds__block--sep{border-top:1.5px dashed var(--hair);padding-top:2em;margin-top:2em}
+.ds__cap{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--carbon);margin-bottom:1.1em}
+
+.pal{display:grid;gap:0}
+.pchip{display:grid;grid-template-columns:34px auto 1fr;align-items:center;gap:.9em;padding:.6em 0;border-top:1px dotted var(--hair)}
+.pchip:first-child{border-top:0}
+.pchip__sw{width:34px;height:34px;border:1.5px solid var(--ink)}
+.pchip__n{font-weight:700;font-size:.92rem;line-height:1.15}
+.pchip__n .fig{display:block;font-size:.74rem;color:var(--carbon);font-weight:400}
+.pchip__r{font-size:.8rem;color:var(--carbon);line-height:1.35}
+
+.spec{border-top:1px dotted var(--hair);padding:1em 0}
+.spec:first-of-type{border-top:0}
+.spec__k{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--carbon);margin-bottom:.4em;display:flex;justify-content:space-between}
+.spec__serif{font-family:var(--serif);font-weight:800;text-transform:uppercase;font-size:1.9rem;line-height:1;letter-spacing:.02em}
+.spec__ui{font-family:var(--ui);font-size:1.1rem}
+.spec__ui b{font-weight:700}
+.spec__mono{font-family:var(--mono);font-feature-settings:'tnum' 1}
+.mono-cols{display:grid;grid-template-columns:1fr auto auto;gap:.15em 1.2em;font-family:var(--mono);font-feature-settings:'tnum' 1;font-size:.92rem;margin-top:.3em}
+.mono-cols .h{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--carbon)}
+.mono-cols .r{text-align:right}
+
+.rules{list-style:none;margin:1.4em 0 0;padding:0}
+.rules li{position:relative;padding:.5em 0 .5em 1.8em;border-top:1px dotted var(--hair);font-size:.9rem;color:var(--ink)}
+.rules li::before{content:"";position:absolute;left:.2em;top:1em;width:.55em;height:.55em;background:var(--teal)}
+.rules li b{font-weight:700}
+
+/* ============ FOOTER ============ */
+.foot{text-align:center;padding:clamp(30px,5vw,54px) 0 8px}
+.foot__end{font-family:var(--serif);font-weight:800;text-transform:uppercase;letter-spacing:.14em;font-size:1.1rem}
+.foot__p{font-family:var(--ui);font-size:.92rem;color:var(--carbon);max-width:52ch;margin:.9em auto 0;line-height:1.6}
+.foot__p a{color:var(--teal);text-decoration:none;border-bottom:1.5px solid var(--teal)}
+.barcode{height:34px;width:min(230px,70%);margin:1.5em auto .4em;background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 9px,var(--ink) 9px 12px,transparent 12px 14px)}
+.foot__code{font-family:var(--mono);font-size:.66rem;letter-spacing:.4em;color:var(--carbon)}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:820px){
+  .hero{grid-template-columns:1fr;gap:36px}
+  .hero__media{order:-1}
+  .feat{grid-template-columns:1fr;gap:30px}
+  .feat--flip .feat__media{order:0}
+  .feat__media{order:-1}
+  .feat__copy{max-width:none}
+  .ds__grid{grid-template-columns:1fr}
+  .mast__top{flex-direction:column;gap:14px}
+  .mast__meta{text-align:left}
+}
+@media(max-width:400px){
+  .mast__top{gap:12px}
+  .legend{gap:8px 14px}
+}
+
+/* focus base */
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);outline-offset:2px}
+</style>
+
+<!-- ===================== ICON SPRITE ===================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9h12l-3-3M18 15H6l3 3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L18 8h2a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.2"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21V3z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l1.5 8L4 15l.5 2 6.5-2 2 5 1.5-1 .5-5 5-1.5-.5-2-4.5 1L10 3z"/></symbol>
+  <symbol id="i-atm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 9h18M7 15h4"/></symbol>
+  <symbol id="i-cake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M5 20v-6a2 2 0 012-2h10a2 2 0 012 2v6M12 8V5M9 8V6M15 8V6"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M21 10v4" stroke-linecap="round"/><rect x="4" y="9" width="11" height="6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><path d="M8 8l12 8M8 16L20 8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M4 20c4-6 8-8 12-9"/></symbol>
+</svg>
+
+<div class="tape-edge" aria-hidden="true"><svg viewBox="0 0 100 14" preserveAspectRatio="none"><path d="M0 14 L0 6 Q2.5 0 5 6 T10 6 T15 6 T20 6 T25 6 T30 6 T35 6 T40 6 T45 6 T50 6 T55 6 T60 6 T65 6 T70 6 T75 6 T80 6 T85 6 T90 6 T95 6 T100 6 L100 14 Z" fill="currentColor"/></svg></div>
+
+<main class="wrap">
+
+  <!-- ============== MASTHEAD + HERO ============== -->
+  <header class="mast">
+    <div class="mast__top">
+      <div class="brand">
+        <svg class="brand__mark" viewBox="0 0 40 52" fill="none" aria-hidden="true">
+          <path d="M3 3h34v40l-4-2.6-4 2.6-4-2.6-4 2.6-4-2.6-4 2.6-4-2.6L3 46V3z" stroke="var(--ink)" stroke-width="2.4" stroke-linejoin="round"/>
+          <path d="M9 13h22M9 20h22" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M9 27h9" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M20 27h11" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.4 2.4"/>
+        </svg>
+        <div>
+          <div class="brand__name">Micro<br>Budget</div>
+          <div class="brand__sub">Print your day back</div>
+        </div>
+      </div>
+      <div class="mast__meta">
+        NO. <b>0001</b> · CONCEPT BUILD<br>
+        MNL <svg width="10" height="10" style="vertical-align:-1px" aria-hidden="true"><use href="#i-swap"/></svg> HAN · <b>v0</b><br>
+        RATE <b>1 PHP = 450 VND</b>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero__copy">
+        <h1 class="hero__thesis">You don’t fail<br>at the math.<br><span class="q">You forget<br>to log.</span></h1>
+        <p class="hero__lede">Micro Budget quietly records where your day went, then prints it back to you at night. The stops you forgot to log come back as <b>gaps in the tape</b> — marked in amber, waiting to be recovered.</p>
+        <div class="legend" role="list" aria-label="Colour system">
+          <span class="legend__i" role="listitem"><span class="swatch swatch--teal"></span>confirmed</span>
+          <span class="legend__i" role="listitem"><span class="swatch swatch--amber"></span>to recall</span>
+          <span class="legend__i" role="listitem"><span class="swatch swatch--red"></span>over budget</span>
+        </div>
+        <p class="hero__note"><svg aria-hidden="true"><use href="#i-leaf"/></svg> Location runs only during a trip, low-power — off by default.</p>
+      </div>
+
+      <div class="hero__media">
+        <!-- ===== PHONE 1 — NIGHTLY REVIEW (signature) ===== -->
+        <div class="device">
+          <div class="screen">
+            <div class="app app--print is-printing" id="app1" aria-label="Nightly Review — today's stops printed as a receipt-tape, with two amber gaps to recover">
+              <div class="printhead" aria-hidden="true"></div>
+              <div class="status">
+                <span>8:14 PM</span>
+                <span class="status__r"><svg aria-hidden="true"><use href="#i-battery"/></svg> 78%</span>
+              </div>
+              <div class="ah">
+                <div class="ah__title">HANOI <span class="stamp stamp--ink">Day 3</span></div>
+                <div class="ah__meta"><span>TUE JUL 9</span><span>Nightly review · 8:14 PM</span></div>
+                <div class="ah__rule"></div>
+              </div>
+              <div class="subhead">
+                <span class="subhead__l">6 stops today</span>
+                <span class="subhead__r">4 logged · <span class="amberink">2 to recall</span></span>
+              </div>
+
+              <div class="ledger">
+                <div class="row row--done prow" style="--i:0"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="row__head"><span class="row__time">08:32</span><span class="row__name">The Chi Boutique</span></div>
+                  <div class="row__sub"><span class="ok"><svg aria-hidden="true"><use href="#i-check"/></svg> no spend</span> · breakfast included</div>
+                </div>
+
+                <div class="row row--done prow" style="--i:1"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="row__head"><span class="row__time">09:24</span><span class="row__name">Cộng Càphê</span>
+                    <span class="row__amt"><span class="fig">VND 90,000</span><span class="fig sub">PHP 200</span></span></div>
+                  <div class="row__sub"><svg aria-hidden="true"><use href="#i-swap"/></svg> split with Yana · egg coffee ×2</div>
+                </div>
+
+                <!-- GAP 1 (primary, interactive) -->
+                <div class="row row--gap prow" style="--i:2" id="gap1"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="gaprule"><span class="gaprule__t"><span class="fig">10:41</span> · Hoàn Kiếm Lake · dwell 41 min</span><span class="gaprule__line"></span></div>
+                  <p class="gap__ask">Spend anything here?</p>
+                  <div class="stubs">
+                    <button class="stub stub--fill" type="button" data-seal="gap1" data-vnd="45,000" data-php="100" data-name="Kem Tràng Tiền (ice cream)">
+                      <svg aria-hidden="true"><use href="#i-plus"/></svg> Add expense</button>
+                    <button class="stub stub--ghost" type="button" data-seal="gap1" data-nospend="1">No spend</button>
+                  </div>
+                  <div class="sealed" role="status">
+                    <div class="row__head"><span class="row__time">10:41</span><span class="row__name" data-sealname>Kem Tràng Tiền</span>
+                      <span class="row__amt" data-sealamt><span class="fig">VND 45,000</span><span class="fig sub">PHP 100</span></span></div>
+                    <div class="row__sub"><span class="ok"><svg aria-hidden="true"><use href="#i-check"/></svg> recovered</span> · sealed just now</div>
+                  </div>
+                </div>
+
+                <div class="row row--done prow" style="--i:3"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="row__head"><span class="row__time">12:15</span><span class="row__name">Bún Chả Hương Liên</span>
+                    <span class="row__amt"><span class="fig">VND 220,000</span><span class="fig sub">PHP 489</span></span></div>
+                  <div class="row__sub"><svg aria-hidden="true"><use href="#i-receipt"/></svg> receipt matched · split with Yana</div>
+                </div>
+
+                <!-- GAP 2 (secondary, interactive) -->
+                <div class="row row--gap prow" style="--i:4" id="gap2"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="gaprule"><span class="gaprule__t"><span class="fig">14:05</span> · Đồng Xuân Market · dwell 28 min</span><span class="gaprule__line"></span></div>
+                  <p class="gap__ask">Spend anything here?</p>
+                  <div class="stubs">
+                    <button class="stub stub--fill" type="button" data-seal="gap2" data-vnd="60,000" data-php="133" data-name="Silk scarf (souvenir)">
+                      <svg aria-hidden="true"><use href="#i-plus"/></svg> Add expense</button>
+                    <button class="stub stub--ghost" type="button" data-seal="gap2" data-nospend="1">No spend</button>
+                  </div>
+                  <div class="sealed" role="status">
+                    <div class="row__head"><span class="row__time">14:05</span><span class="row__name" data-sealname>—</span>
+                      <span class="row__amt" data-sealamt></span></div>
+                    <div class="row__sub"><span class="ok"><svg aria-hidden="true"><use href="#i-check"/></svg> recovered</span></div>
+                  </div>
+                </div>
+
+                <div class="row row--done prow" style="--i:5"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="row__head"><span class="row__time">16:20</span><span class="row__name">Grab ride</span>
+                    <span class="row__amt"><span class="fig">VND 68,000</span><span class="fig sub">PHP 151</span></span></div>
+                  <div class="row__sub"><svg aria-hidden="true"><use href="#i-pin"/></svg> auto-matched to route</div>
+                </div>
+
+                <div class="row row--now prow" style="--i:6"><span class="row__seg"></span><span class="row__node"></span>
+                  <div class="row__head"><span class="row__time">19:30</span><span class="row__name">The Chi Boutique</span><span class="row__amt tl">now</span></div>
+                </div>
+              </div>
+
+              <div class="total">
+                <div class="total__row">
+                  <span class="total__k">Day total</span>
+                  <span class="total__v"><span class="fig" id="totVnd">VND 378,000</span><span class="fig sub" id="totPhp">~ PHP 840</span></span>
+                </div>
+                <div class="total__budget"><svg aria-hidden="true"><use href="#i-check"/></svg> <span id="totBudget">under trip budget by PHP 360</span></div>
+              </div>
+              <div class="cta">
+                <button class="btn" type="button">Close the day</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="anno" aria-hidden="true">
+          <li><span class="k a">gap</span> a dwell with no logged spend prints as a break in the tape</li>
+          <li><span class="k">tap</span> recover it — the break <span class="k t" style="border:0;padding:0">seals</span> and the stop is logged</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <div class="perf" role="separator" aria-hidden="true"><span class="perf__lbl"><svg><use href="#i-scissors"/></svg> The free core</span></div>
+
+  <!-- ============== FEATURE 2 — TODAY / BUDGET ============== -->
+  <section class="feat" aria-labelledby="f2h">
+    <div class="feat__media">
+      <div class="device">
+        <div class="screen"><div class="app">
+          <div class="status"><span>7:02 AM</span><span class="status__r"><svg aria-hidden="true"><use href="#i-battery"/></svg> 96%</span></div>
+          <div class="ah">
+            <div class="ah__title">TODAY</div>
+            <div class="ah__meta"><span>SAT JUL 19</span><span>Manila</span></div>
+            <div class="ah__rule"></div>
+          </div>
+          <div class="budget">
+            <div class="budget__top">
+              <div class="budget__safe"><small>Safe to spend today</small>PHP 410</div>
+              <div class="budget__meta">JULY · <b>PHP 24,000</b><br>spent <b>PHP 16,720</b> · 70%</div>
+            </div>
+            <div class="bline" aria-hidden="true">
+              <span class="bline__track"></span>
+              <span class="bline__fill" style="width:70%"></span>
+              <span class="bline__you" style="left:61%"></span>
+              <span class="bline__end"></span>
+            </div>
+            <div class="bline__cap"><span>Jul 1</span><span>day 19 of 31</span><span>Jul 31</span></div>
+          </div>
+          <div class="cats__h"><span>Category</span><span>spent / limit · PHP</span></div>
+          <div class="cats">
+            <div class="cat"><span class="cat__n">Food</span><span class="cat__bar"><i style="width:86%"></i></span><span class="cat__v"><b>6,840</b>/8,000</span></div>
+            <div class="cat"><span class="cat__n">Transport</span><span class="cat__bar warn"><i style="width:89%"></i></span><span class="cat__v"><span class="cflag warn" aria-label="near limit">!</span><b>3,120</b>/3,500</span></div>
+            <div class="cat"><span class="cat__n">Home</span><span class="cat__bar over"><i style="width:100%"></i></span><span class="cat__v red"><span class="cflag over" aria-label="over budget">!</span><b>4,600</b>/4,500</span></div>
+            <div class="cat"><span class="cat__n">Fun</span><span class="cat__bar"><i style="width:27%"></i></span><span class="cat__v"><b>2,160</b>/8,000</span></div>
+          </div>
+          <div class="ah__rule ah__rule--dot" style="margin:.5em 1.25em 0"></div>
+          <div style="padding:.4em 1.25em .2em">
+            <div class="lrow"><span class="lrow__t">08:10</span><span class="lrow__n">Kape</span><span class="lrow__cat">food</span><span class="lrow__lead"></span><span class="lrow__a fig">PHP 145</span></div>
+            <div class="lrow"><span class="lrow__t">08:40</span><span class="lrow__n">Grab to office</span><span class="lrow__cat">transport</span><span class="lrow__lead"></span><span class="lrow__a fig">PHP 220</span></div>
+            <div class="lrow"><span class="lrow__t">12:30</span><span class="lrow__n">Lunch · Jollibee</span><span class="lrow__cat">food</span><span class="lrow__lead"></span><span class="lrow__a fig">PHP 185</span></div>
+          </div>
+          <div class="banner"><svg aria-hidden="true"><use href="#i-plane"/></svg><span><b>Sapa trip in 12 days.</b> 1 expense pre-tagged (plane ticket).</span></div>
+          <div class="banner" style="border-color:var(--teal);color:var(--teal-deep)"><svg aria-hidden="true" style="color:var(--teal)"><use href="#i-cake"/></svg><span><b>Yana’s birthday · Jul 28.</b> Envelope set: PHP 2,000.</span></div>
+          <div class="cta"><button class="btn" type="button"><svg aria-hidden="true"><use href="#i-plus"/></svg> Log expense</button></div>
+        </div></div>
+      </div>
+      <p class="feat__cap">Daily mode · Manila · offline</p>
+    </div>
+    <div class="feat__copy">
+      <div class="feat__no">A · THE FREE CORE</div>
+      <h2 class="feat__h" id="f2h">Budget is a line you’re printing toward — not a donut.</h2>
+      <p class="feat__p">Logging takes three taps and works with zero signal. The month is a strip of tape you’re printing across; <b>“safe to spend today”</b> is the plain number most apps bury. Categories warn in amber before they cross into red.</p>
+      <ul class="feat__list">
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Log in three taps: amount, category, done. <b>Under 5 seconds.</b></li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Pre-tag future spend — a <b>plane ticket</b> bought weeks early, a birthday <b>envelope</b>.</li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Every number stored raw. Nothing here costs an API call — <b>free forever</b>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============== FEATURE 3 — ADD / MULTI-CURRENCY / RECEIPT ============== -->
+  <section class="feat feat--flip" aria-labelledby="f3h">
+    <div class="feat__media">
+      <div class="device">
+        <div class="screen"><div class="app">
+          <div class="status"><span>12:16 PM</span><span class="status__r"><svg aria-hidden="true"><use href="#i-battery"/></svg> 71%</span></div>
+          <div class="ah">
+            <div class="ah__title" style="font-size:1.35em">NEW EXPENSE</div>
+            <div class="ah__meta"><span>HANOI</span><span>VND cash pool</span></div>
+            <div class="ah__rule"></div>
+          </div>
+          <div class="entry">
+            <div class="entry__amt">VND 220,000<span class="car"></span></div>
+            <div class="entry__conv">
+              <div class="entry__peso">= PHP 489</div>
+              <div class="entry__rate">at your real rate · 1 PHP = 450 VND</div>
+              <div class="entry__derive"><svg aria-hidden="true"><use href="#i-swap"/></svg> derived: you gave <span class="fig">PHP 2,000</span> -&gt; got <span class="fig">VND 900,000</span></div>
+            </div>
+          </div>
+          <div class="fields">
+            <div class="field"><span class="field__k">Category</span><span class="field__v"><span class="pill">Food</span></span></div>
+            <div class="field"><span class="field__k">Trip</span><span class="field__v"><span class="pill">Hanoi</span> <span class="stamp stamp--teal">tagged</span></span></div>
+            <div class="field"><span class="field__k">Split</span><span class="field__v"><svg aria-hidden="true"><use href="#i-swap"/></svg> Yana · equal · <span class="fig">VND 110,000</span> each</span></div>
+          </div>
+          <div class="slip">
+            <div class="slip__h"><svg aria-hidden="true"><use href="#i-receipt"/></svg> Scanned receipt · on-device</div>
+            <div class="slip__row"><span>Bún Chả Hương Liên</span><span class="fig">220,000</span></div>
+            <div class="slip__rule"></div>
+            <div class="slip__row"><span class="tl">read · conf 84%</span><span class="stamp stamp--teal">total <svg style="width:1em;height:1em;vertical-align:-.12em" aria-hidden="true"><use href="#i-check"/></svg></span></div>
+          </div>
+          <div class="banner" style="border-style:solid;border-color:var(--ink);color:var(--ink)"><svg aria-hidden="true" style="color:var(--amber-ink)"><use href="#i-cam"/></svg><span><b>AI Parse</b> — itemize every line, auto-categorize <span class="stamp stamp--amber">Pro</span></span></div>
+          <div class="cta"><button class="btn" type="button"><svg aria-hidden="true"><use href="#i-check"/></svg> Log expense</button></div>
+        </div></div>
+      </div>
+      <p class="feat__cap">One tap from the gap, or the camera</p>
+    </div>
+    <div class="feat__copy">
+      <div class="feat__no">B · ACCURATE ABROAD</div>
+      <h2 class="feat__h" id="f3h">It never asks your exchange rate. It already knows.</h2>
+      <p class="feat__p">You changed PHP 2,000 and got VND 900,000 — so Micro Budget knows your <b>real</b> rate is 450, fees and all. Every VND figure carries its true peso cost. Raw amounts are stored forever; the conversion is just a lens.</p>
+      <ul class="feat__list">
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Snap the receipt now, sort later. <b>On-device scan is free.</b></li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> <b>AI Parse</b> itemizes every line — the paid tier, where a real API bill sits.</li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Money changer, ATM, card — logged as <b>pending</b>, confirmed when the statement lands.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============== FEATURE 4 — SPLIT / SETTLEMENT (GHOST) ============== -->
+  <section class="feat" aria-labelledby="f4h">
+    <div class="feat__media">
+      <div class="device">
+        <div class="screen"><div class="app">
+          <div class="status"><span>9:48 PM</span><span class="status__r"><svg aria-hidden="true"><use href="#i-battery"/></svg> 64%</span></div>
+          <div class="ah">
+            <div class="ah__title" style="font-size:1.5em">SETTLE UP</div>
+            <div class="ah__meta"><span>HANOI</span><span>Jul 7–13 · with Yana</span></div>
+            <div class="ah__rule"></div>
+          </div>
+          <div style="padding:.5em 1.25em .1em">
+            <div class="lrow"><span class="lrow__n">You fronted</span><span class="lrow__lead"></span><span class="lrow__a fig">PHP 4,889</span></div>
+            <div class="lrow"><span class="lrow__n">Yana fronted</span><span class="lrow__lead"></span><span class="lrow__a fig">PHP 400</span></div>
+          </div>
+          <div class="net">
+            <div class="net__k">Yana owes you</div>
+            <div class="net__v">PHP 2,245 <span class="stamp stamp--amber">unsettled</span></div>
+            <div class="net__sub">Split equally, netted at your real rate. Settle on GCash, outside the app.</div>
+          </div>
+          <div class="slip">
+            <div class="slip__h">Shared items · who paid</div>
+            <div class="slip__row"><span><svg width="11" height="11" style="vertical-align:-1px" aria-hidden="true"><use href="#i-plane"/></svg> Manila to Hanoi <span class="stamp stamp--ink" style="transform:none">pre-trip</span></span><span class="fig">PHP 4,200</span></div>
+            <div class="slip__row"><span>Egg coffee ×2 · you</span><span class="fig">PHP 200<span class="fig sub">VND 90k</span></span></div>
+            <div class="slip__row"><span>Bún Chả lunch · you</span><span class="fig">PHP 489<span class="fig sub">VND 220k</span></span></div>
+            <div class="slip__row"><span>Sapa bus · Yana</span><span class="fig">PHP 400<span class="fig sub">VND 180k</span></span></div>
+          </div>
+          <div class="banner"><svg aria-hidden="true"><use href="#i-swap"/></svg><span><b>Yana doesn’t have the app.</b> Send them the summary — settle for real.</span></div>
+          <div class="cta">
+            <button class="btn btn--ghost" type="button"><svg aria-hidden="true"><use href="#i-receipt"/></svg> Share summary</button>
+            <button class="btn" type="button">Remind Yana</button>
+          </div>
+        </div></div>
+      </div>
+      <p class="feat__cap">Ghost split · no accounts, no invites</p>
+    </div>
+    <div class="feat__copy">
+      <div class="feat__no">C · GHOST SPLIT</div>
+      <h2 class="feat__h" id="f4h">Split with people who’ll never install this.</h2>
+      <p class="feat__p">Companions are just labels. Micro Budget tracks who <b>fronted</b> versus who <b>owes</b>, nets it out at the payer’s real rate, and hands you a clean summary for the group chat. No accounts to create, no invites to send, no sync to break.</p>
+      <ul class="feat__list">
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> <b>Fronted, not owed.</b> The whole feature is that one distinction.</li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Amounts, never percentages — <b>they always sum</b>, down to the last cent.</li>
+        <li><svg aria-hidden="true"><use href="#i-check"/></svg> Settle on GCash. The app tracks who still owes and <b>lets you nudge them</b>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="perf" role="separator" aria-hidden="true"><span class="perf__lbl"><svg><use href="#i-scissors"/></svg> How it’s printed</span></div>
+
+  <!-- ============== DESIGN SYSTEM ============== -->
+  <section class="ds" aria-labelledby="dsh">
+    <h2 class="ds__h" id="dsh">The identity, itemized</h2>
+    <p class="ds__lede">One receipt-tape · two temperatures · flat printed ink — no shadows, no glow, no gradients.</p>
+    <div class="ds__grid">
+      <div class="ds__block">
+        <div class="ds__cap">Palette · printed ink</div>
+        <div class="pal">
+          <div class="pchip"><span class="pchip__sw" style="background:#E3E5DE"></span><span class="pchip__n">Thermal Paper<span class="fig">#E3E5DE</span></span><span class="pchip__r">The tape. Cool green-grey — reads fresh, never cream.</span></div>
+          <div class="pchip"><span class="pchip__sw" style="background:#211C15"></span><span class="pchip__n">Docket Ink<span class="fig">#211C15</span></span><span class="pchip__r">Text, figures, rules. Warm brown-black, never pure #000.</span></div>
+          <div class="pchip"><span class="pchip__sw" style="background:#0F6B62"></span><span class="pchip__n">Customs Teal<span class="fig">#0F6B62</span></span><span class="pchip__r">CONFIRMED — settled money, your real rate, sealed rows.</span></div>
+          <div class="pchip"><span class="pchip__sw" style="background:#E79A2E"></span><span class="pchip__n">Slip Amber<span class="fig">#E79A2E</span></span><span class="pchip__r">RECALL — gaps, pending, amounts owed. The warm signal.</span></div>
+          <div class="pchip"><span class="pchip__sw" style="background:#B23520"></span><span class="pchip__n">Overprint Red<span class="fig">#B23520</span></span><span class="pchip__r">ALARM only — overspend and negative balances.</span></div>
+          <div class="pchip"><span class="pchip__sw" style="background:#D6CBB4"></span><span class="pchip__n">Manila<span class="fig">#D6CBB4</span></span><span class="pchip__r">Inset slips only — money-changer & ATM dockets.</span></div>
+        </div>
+      </div>
+      <div class="ds__block">
+        <div class="ds__cap">Type · a printed collision</div>
+        <div class="spec">
+          <div class="spec__k"><span>Display — Bricolage Grotesque 800</span><span>ritual only</span></div>
+          <div class="spec__serif">HANOI · DAY TOTAL</div>
+        </div>
+        <div class="spec">
+          <div class="spec__k"><span>UI — Hanken Grotesk</span><span>all chrome</span></div>
+          <div class="spec__ui">Labels, prompts, and <b>companion names</b> — the warm modern anchor that keeps the receipt from tipping into costume.</div>
+        </div>
+        <div class="spec">
+          <div class="spec__k"><span>Ledger — Fragment Mono</span><span>every figure</span></div>
+          <div class="mono-cols">
+            <span class="h">item</span><span class="h r">native</span><span class="h r">PHP cost</span>
+            <span>Egg coffee ×2</span><span class="r">VND 90,000</span><span class="r">PHP 200</span>
+            <span>Bún Chả lunch</span><span class="r">VND 220,000</span><span class="r">PHP 489</span>
+            <span>Grab ride</span><span class="r">VND 68,000</span><span class="r">PHP 151</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds__block ds__block--sep">
+      <div class="ds__cap">Rules the build obeys</div>
+      <ul class="rules">
+        <li><b>Money is ISO code + tabular mono.</b> PHP 840, VND 378,000 — codes read truer than symbols across currencies, and columns align to the digit.</li>
+        <li><b>Sequence is real time.</b> Rows are stamped with the clock — 08:32, 12:15 — never decorative 01 / 02 / 03. Order carries the day.</li>
+        <li><b>Continuity is the accounting.</b> Unbroken tape = time accounted for. A break = money you forgot. Recovering it seals the break.</li>
+        <li><b>Two temperatures, load-bearing.</b> Teal, amber and red are never decoration — each one means a specific state, always paired with a word.</li>
+        <li><b>Flat and printed.</b> Perforations, dotted leaders, tabular rules, one stamp. No paper texture, no drop shadow, no faux fade.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============== FOOTER ============== -->
+  <footer class="foot">
+    <div class="foot__end">End of tape</div>
+    <p class="foot__p">A concept design for <b>Micro Budget</b> — a daily budgeter with a travel mode, built on one idea: people don’t fail at the math, they forget to log.<br>Next: implementation in Expo / NativeWind, per the build plan.</p>
+    <div class="barcode" aria-hidden="true"></div>
+    <div class="foot__code">M I C R O · B U D G E T · 0001</div>
+  </footer>
+</main>
+<div class="tape-edge tape-edge--btm" aria-hidden="true"><svg viewBox="0 0 100 14" preserveAspectRatio="none"><path d="M0 14 L0 6 Q2.5 0 5 6 T10 6 T15 6 T20 6 T25 6 T30 6 T35 6 T40 6 T45 6 T50 6 T55 6 T60 6 T65 6 T70 6 T75 6 T80 6 T85 6 T90 6 T95 6 T100 6 L100 14 Z" fill="currentColor"/></svg></div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Print-and-seal entrance on phone 1 — remove the "printing" class after it plays
+  var app1 = document.getElementById('app1');
+  if(app1){
+    if(reduce){ app1.classList.remove('is-printing'); }
+    else {
+      // let it play, then settle so nothing stays mid-animation
+      window.setTimeout(function(){ app1.classList.remove('is-printing'); }, 3600);
+    }
+  }
+
+  // Day total ticker (VND / PHP), starts at the printed figures
+  var totVnd = 378000, totPhp = 840, budget = 1200; // trip day budget in PHP
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  function render(){
+    var v = document.getElementById('totVnd'), p = document.getElementById('totPhp'), b = document.getElementById('totBudget');
+    if(v) v.textContent = 'VND ' + fmt(totVnd);
+    if(p) p.textContent = '~ PHP ' + fmt(totPhp);
+    if(b){
+      var diff = budget - totPhp;
+      b.textContent = diff >= 0 ? ('under trip budget by PHP ' + fmt(diff)) : ('over trip budget by PHP ' + fmt(-diff));
+      var wrap = b.parentElement;
+      if(wrap){ wrap.style.color = diff >= 0 ? 'var(--teal)' : 'var(--red)'; }
+    }
+  }
+
+  // Gap sealing
+  document.querySelectorAll('.stub[data-seal]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var row = document.getElementById(btn.getAttribute('data-seal'));
+      if(!row || row.classList.contains('is-sealed')) return;
+      var nameEl = row.querySelector('[data-sealname]');
+      var amtEl  = row.querySelector('[data-sealamt]');
+      if(btn.hasAttribute('data-nospend')){
+        if(nameEl) nameEl.textContent = 'No spend here';
+        if(amtEl) amtEl.innerHTML = '<span class="tl">nothing</span>';
+      } else {
+        var vnd = btn.getAttribute('data-vnd'), php = btn.getAttribute('data-php'), nm = btn.getAttribute('data-name');
+        if(nameEl) nameEl.textContent = nm;
+        if(amtEl) amtEl.innerHTML = '<span class="fig">VND ' + vnd + '</span><span class="fig sub">PHP ' + php + '</span>';
+        // add to day total
+        totVnd += parseInt(vnd.replace(/,/g,''),10) || 0;
+        totPhp += parseInt(php.replace(/,/g,''),10) || 0;
+        render();
+      }
+      row.classList.add('is-sealed');
+      // update the "to recall" counter
+      var remaining = document.querySelectorAll('.row--gap:not(.is-sealed)').length;
+      var sh = document.querySelector('.subhead__r');
+      if(sh){
+        var logged = 4 + (2 - remaining);
+        sh.innerHTML = logged + ' logged' + (remaining ? ' · <span class="amberink">' + remaining + ' to recall</span>' : ' · <span class="teal">all recalled</span>');
+      }
+    });
+  });
+})();
+</script>
