@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* "The Ledger-Tape" palette as tokens — light is warm paper, dark is a warm
+   "night receipt" (carbon-black ground, paper-white ink, luminous accents).
+   Two-temperature system: teal = confirmed, amber = recall/gap, red = alarm. */
+@layer base {
+  :root {
+    --paper: #e3e5de;
+    --paper-lit: #edeee8;
+    --ink: #211c15;
+    --carbon: #5e5a4f;
+    --teal: #0f6b62;
+    --teal-deep: #0b4f48;
+    --amber: #e79a2e;
+    --amber-ink: #85500f;
+    --red: #b23520;
+    --manila: #d6cbb4;
+    --faded: #6e6a5b;
+    --slip-muted: #48443b;
+    --on-amber: #211c15;
+    --hair: rgba(33, 28, 21, 0.22);
+
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141109;
+      --paper-lit: #211c15;
+      --ink: #ece6d8;
+      --carbon: #a49c8a;
+      --teal: #4cbba9;
+      --teal-deep: #6fd0bf;
+      --amber: #e7a23e;
+      --amber-ink: #e8ac55;
+      --red: #e8735c;
+      --manila: #2e2619;
+      --faded: #8c8574;
+      --slip-muted: #b0a791;
+      --on-amber: #211c15;
+      --hair: rgba(236, 230, 216, 0.2);
+    }
+  }
+}
