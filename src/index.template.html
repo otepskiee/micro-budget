@@ -9,7 +9,7 @@
 /*__FONTS__*/
 
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;color-scheme:light;background:#E3E5DE}
+html{-webkit-text-size-adjust:100%;color-scheme:light dark;background:var(--paper)}
 body{margin:0}
 
 :root{
@@ -26,12 +26,40 @@ body{margin:0}
   --manila:#D6CBB4;     /* inset slip panels only */
   --rule:#211C15;
   --hair:rgba(33,28,21,.22);
+  --on-amber:#211C15;    /* dark ink on amber fill — fixed in both themes */
+  --faded:#6E6A5B;       /* faded second half of the H1 thesis */
+  --slip-muted:#48443B;  /* muted text on manila slips */
+  --slip-rule:rgba(33,28,21,.28);
 
   --serif:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
   --ui:'Hanken Grotesk',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'Fragment Mono',ui-monospace,'Cascadia Code','Consolas',monospace;
 
   --maxw:1080px;
+}
+
+/* ---- dark theme: a warm "night receipt" / carbon copy, not an inversion.
+   Ground goes warm carbon-black, ink becomes warm paper-white, accents luminous.
+   Fits the ~8pm nightly-review ritual and the OLED-battery story. ---- */
+:root[data-theme="dark"]{
+  --paper:#141109; --paper-lit:#211C15;
+  --ink:#ECE6D8; --carbon:#A49C8A; --carbon-soft:#7C7565;
+  --teal:#4CBBA9; --teal-deep:#6FD0BF;
+  --amber:#E7A23E; --amber-ink:#E8AC55;
+  --red:#E8735C; --manila:#2E2619;
+  --rule:#ECE6D8; --hair:rgba(236,230,216,.20);
+  --faded:#8C8574; --slip-muted:#B0A791; --slip-rule:rgba(236,230,216,.20);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141109; --paper-lit:#211C15;
+    --ink:#ECE6D8; --carbon:#A49C8A; --carbon-soft:#7C7565;
+    --teal:#4CBBA9; --teal-deep:#6FD0BF;
+    --amber:#E7A23E; --amber-ink:#E8AC55;
+    --red:#E8735C; --manila:#2E2619;
+    --rule:#ECE6D8; --hair:rgba(236,230,216,.20);
+    --faded:#8C8574; --slip-muted:#B0A791; --slip-rule:rgba(236,230,216,.20);
+  }
 }
 
 body{
@@ -55,6 +83,11 @@ body{
 
 /* ---- page frame ---- */
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.toolbar{display:flex;justify-content:flex-end;padding-top:14px}
+.themebtn{display:inline-flex;align-items:center;gap:.55em;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--carbon);background:transparent;border:1.5px solid var(--hair);border-radius:4px;padding:.45em .7em;cursor:pointer;line-height:1}
+.themebtn svg{width:1.05em;height:1.05em}
+.themebtn:hover{color:var(--ink);border-color:var(--ink)}
+.themebtn:focus-visible{outline:2.5px solid var(--teal);outline-offset:2px}
 .tape-edge{display:block;width:100%;height:14px;color:var(--paper)}
 .tape-edge svg{display:block;width:100%;height:14px}
 .tape-edge--btm{transform:scaleY(-1)}
@@ -77,7 +110,7 @@ body{
 
 .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,5vw,64px);align-items:center;margin-top:clamp(30px,5vw,60px)}
 .hero__thesis{font-family:var(--serif);font-weight:800;text-transform:none;letter-spacing:-.01em;line-height:1.02;font-size:clamp(2rem,5.4vw,3.4rem);margin:0}
-.hero__thesis .q{color:#6E6A5B}
+.hero__thesis .q{color:var(--faded)}
 .hero__lede{font-size:clamp(1rem,1.5vw,1.15rem);color:var(--ink);max-width:34ch;margin:20px 0 0}
 .hero__lede b{color:var(--amber-ink);font-weight:700}
 .legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:26px}
@@ -162,7 +195,7 @@ body{
 .stubs{display:flex;gap:.5em;flex-wrap:wrap}
 .stub{font-family:var(--ui);font-weight:700;font-size:.86em;padding:.4em .8em;border:1.6px solid var(--amber-ink);color:var(--amber-ink);background:transparent;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:.35em;line-height:1}
 .stub svg{width:1.05em;height:1.05em}
-.stub--fill{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.stub--fill{background:var(--amber);border-color:var(--amber);color:var(--on-amber)}
 .stub--ghost{border-color:var(--carbon);color:var(--carbon)}
 .stub:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px}
 
@@ -184,11 +217,11 @@ body{
 .slip__h svg{width:1.2em;height:1.2em}
 .slip__row{display:flex;justify-content:space-between;gap:1em;font-size:.9em;padding:.1em 0}
 .slip__row .fig{font-size:.92em}
-.slip .tl{color:#48443B}
+.slip .tl{color:var(--slip-muted)}
 .slip .stamp--teal{color:var(--teal-deep)}
 .slip .stamp--ink{color:var(--ink)}
-.slip__row .fig.sub{color:#4A463C;font-size:.8em;margin-left:.5em}
-.slip__rule{height:0;border-top:1.4px solid rgba(33,28,21,.28);margin:.35em 0}
+.slip__row .fig.sub{color:var(--slip-muted);font-size:.8em;margin-left:.5em}
+.slip__rule{height:0;border-top:1.4px solid var(--slip-rule);margin:.35em 0}
 
 /* leader-dot money rows (generic ledger, e.g. today's list) */
 .lrow{display:flex;align-items:baseline;gap:.6em;padding:.42em 0;font-size:1em}
@@ -385,11 +418,18 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2.5px soli
   <symbol id="i-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><path d="M8 8l12 8M8 16L20 8"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M4 20c4-6 8-8 12-9"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8 8 0 1 1 9.5 3.5a6.2 6.2 0 0 0 11 11z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5"/></symbol>
 </svg>
+<script>try{var _t=localStorage.getItem('mb-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
 
 <div class="tape-edge" aria-hidden="true"><svg viewBox="0 0 100 14" preserveAspectRatio="none"><path d="M0 14 L0 6 Q2.5 0 5 6 T10 6 T15 6 T20 6 T25 6 T30 6 T35 6 T40 6 T45 6 T50 6 T55 6 T60 6 T65 6 T70 6 T75 6 T80 6 T85 6 T90 6 T95 6 T100 6 L100 14 Z" fill="currentColor"/></svg></div>
 
 <main class="wrap">
+
+  <div class="toolbar">
+    <button id="themebtn" class="themebtn" type="button" aria-pressed="false" aria-label="Toggle dark mode"><svg aria-hidden="true"><use href="#i-moon"/></svg><span class="themebtn__lbl">Dark</span></button>
+  </div>
 
   <!-- ============== MASTHEAD + HERO ============== -->
   <header class="mast">
@@ -800,5 +840,29 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2.5px soli
       }
     });
   });
+})();
+</script>
+<script>
+(function(){
+  var root=document.documentElement, KEY='mb-theme';
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  var btn=document.getElementById('themebtn');
+  function eff(){ return root.getAttribute('data-theme') || (mq.matches?'dark':'light'); }
+  function sync(){
+    if(!btn) return;
+    var d=eff()==='dark';
+    btn.setAttribute('aria-pressed', d?'true':'false');
+    var lbl=btn.querySelector('.themebtn__lbl'); if(lbl) lbl.textContent=d?'Light':'Dark';
+    var u=btn.querySelector('use'); if(u) u.setAttribute('href', d?'#i-sun':'#i-moon');
+  }
+  if(btn){ btn.addEventListener('click', function(){
+    var n = eff()==='dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', n);
+    try{ localStorage.setItem(KEY, n); }catch(e){}
+    sync();
+  }); }
+  if(mq.addEventListener) mq.addEventListener('change', sync);
+  try{ new MutationObserver(sync).observe(root,{attributes:true,attributeFilter:['data-theme']}); }catch(e){}
+  sync();
 })();
 </script>

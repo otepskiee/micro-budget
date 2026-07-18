@@ -33,7 +33,7 @@ HEAD = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <title>Micro Budget — The Ledger-Tape</title>
 <meta name="description" content="Concept design for Micro Budget: a daily budgeter with a travel mode. Your day prints itself as a receipt-tape, and the stops you forgot to log come back as gaps to recover.">
 </head>
