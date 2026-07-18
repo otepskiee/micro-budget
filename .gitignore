@@ -1,6 +1,15 @@
 # build artifacts (index.html is committed intentionally; everything under build/ is derivable)
 build/
 
+# secrets / local env — NEVER commit real keys
+.env
+.env.*
+!.env.example
+
+# supabase local scratch
+supabase/.temp/
+supabase/.branches/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
