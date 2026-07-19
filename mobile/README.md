@@ -80,10 +80,26 @@ src/
     theme.ts           # palette + color-scheme hook
 ```
 
-## Not yet (next)
+## What's wired
 
-- The signature **Nightly Review** screen (geo-trail + amber gap recovery) under a
-  trip; background location + dwell clustering.
-- Receipt capture + OCR (free) / AI Parse (paid), via a Supabase Edge Function.
-- Sync **pull** (server → local, last-write-wins) and composite-key table sync.
-- Real display faces (Bricolage / Hanken / Fragment Mono) via `expo-font` (.ttf).
+- **Daily** — Today tab: 3-tap logging, budget line, category warnings, safe-to-spend.
+- **Travel** — Trips tab: create trips, multi-currency, money changer → foreign-cash
+  pool with a *derived* effective rate.
+- **Nightly Review** (`app/review/[trip]`) — the geo-trail: stops matched to expenses
+  or amber gaps you recover; trip-scoped background location (`lib/geo/tracking`) +
+  dwell clustering (`lib/geo/review`, tested).
+- **Receipts** — Attach (free) + Scan with AI (paid): `parse-receipt` Edge Function
+  (Claude Haiku vision) → prefilled expense.
+- **Ghost split** (`app/settle/[trip]`) — fronted vs owed, minimal transfers, Share
+  summary. Split math tested.
+- **Local-first sync** — no account needed; outbox push (incl. composite keys) + pull
+  (server→local, LWW), fires on sign-in.
+- **Notification** — 8pm nightly review; **light + dark** receipt theme.
+
+## Still to do
+
+- On-device **free OCR** (ML Kit text recognition) — deferred to avoid a fragile
+  native module in an unverified build; the heuristic parser (`lib/receipt/parse`,
+  tested) is ready to plug into it. AI parse is the working smart path today.
+- Display faces (Bricolage / Hanken) via `expo-font`; Fragment Mono is embedded.
+- POI naming for stays (reverse-geocode Edge Function); receipt-image cloud backup.

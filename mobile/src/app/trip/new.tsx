@@ -12,7 +12,10 @@ export default function NewTrip() {
 
   const save = async () => {
     if (!name.trim()) return;
-    await addTrip({ name: name.trim(), homeCurrency: currency.trim().toUpperCase() || "VND" });
+    await addTrip({
+      name: name.trim(),
+      homeCurrency: currency.trim().toUpperCase() || "VND",
+    });
     capture("trip_created");
     router.back();
   };

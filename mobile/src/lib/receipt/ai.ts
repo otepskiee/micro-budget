@@ -13,7 +13,10 @@ type RawItem = { description?: unknown; amount?: unknown };
 
 /** PAID tier: send the image to the parse-receipt Edge Function (Claude vision).
  * Returns null when Supabase isn't configured or parsing fails. */
-export async function parseReceiptWithAI(imageBase64: string, mediaType: string): Promise<AiReceipt | null> {
+export async function parseReceiptWithAI(
+  imageBase64: string,
+  mediaType: string,
+): Promise<AiReceipt | null> {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase.functions.invoke("parse-receipt", {
     body: { imageBase64, mediaType },
@@ -29,7 +32,9 @@ export async function parseReceiptWithAI(imageBase64: string, mediaType: string)
   };
   const currency = (p.currency ?? "").toUpperCase() || null;
   const totalMinor =
-    currency && typeof p.total === "number" && p.total > 0 ? toMinor(p.total, currency) : null;
+    currency && typeof p.total === "number" && p.total > 0
+      ? toMinor(p.total, currency)
+      : null;
 
   return {
     merchant: p.merchant?.trim() || null,

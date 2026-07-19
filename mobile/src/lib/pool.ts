@@ -14,6 +14,9 @@ export function poolEffectiveRate(topups: PoolTopup[]): number {
 }
 
 /** Home-minor cost of drawing `foreignMinor` from the pool at its effective rate. */
-export function poolDrawHome(foreignMinor: number, homeMinorPerForeignMinor: number): number {
+export function poolDrawHome(
+  foreignMinor: number,
+  homeMinorPerForeignMinor: number,
+): number {
   return Math.round(foreignMinor * homeMinorPerForeignMinor);
 }

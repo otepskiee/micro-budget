@@ -7,7 +7,9 @@ const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 if (!url || !key) {
   // Not fatal — the app runs fully offline on local SQLite; sync just no-ops.
-  console.warn("[supabase] missing EXPO_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY (see .env.example)");
+  console.warn(
+    "[supabase] missing EXPO_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY (see .env.example)",
+  );
 }
 
 // Supabase is sync/backup + auth, NOT the source of truth. The device's SQLite is.

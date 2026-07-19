@@ -25,8 +25,9 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
+  /* Driven by NativeWind's color-scheme (class mode): follows the OS by default,
+     and the in-app toggle flips it. */
+  .dark:root {
       --paper: #141109;
       --paper-lit: #211c15;
       --ink: #ece6d8;
@@ -41,6 +42,5 @@
       --slip-muted: #b0a791;
       --on-amber: #211c15;
       --hair: rgba(236, 230, 216, 0.2);
-    }
   }
 }

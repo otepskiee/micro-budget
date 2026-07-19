@@ -16,13 +16,18 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   await db.execAsync(
     "create table if not exists _migrations (name text primary key, applied_at text not null);",
   );
-  const rows = await db.getAllAsync<{ name: string }>("select name from _migrations");
+  const rows = await db.getAllAsync<{ name: string }>(
+    "select name from _migrations",
+  );
   const applied = new Set(rows.map((r) => r.name));
   for (const m of MIGRATIONS) {
     if (applied.has(m.name)) continue;
     await db.withTransactionAsync(async () => {
       await db.execAsync(m.sql);
-      await db.runAsync("insert into _migrations (name, applied_at) values (?, ?)", [m.name, nowIso()]);
+      await db.runAsync(
+        "insert into _migrations (name, applied_at) values (?, ?)",
+        [m.name, nowIso()],
+      );
     });
   }
   return db;

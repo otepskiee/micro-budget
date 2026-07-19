@@ -30,7 +30,10 @@ export async function ensureNotificationPermission(): Promise<boolean> {
 }
 
 /** The product's core ritual: a local notification each evening to close the day. */
-export async function scheduleNightlyReview(hour = 20, minute = 0): Promise<boolean> {
+export async function scheduleNightlyReview(
+  hour = 20,
+  minute = 0,
+): Promise<boolean> {
   const ok = await ensureNotificationPermission();
   if (!ok) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();

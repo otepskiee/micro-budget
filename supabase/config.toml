@@ -1,0 +1,8 @@
+# Micro Budget — Supabase project config.
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+project_id = "micro-budget"
+
+[functions.parse-receipt]
+# Require a valid Supabase JWT — only signed-in users can spend AI-parse credits.
+# The Anthropic key lives in a function secret, never on the device.
+verify_jwt = true

@@ -7,13 +7,19 @@ import { uid, nowIso } from "../uid";
  * points. POI naming (reverse-geocode via an Edge Function) is a follow-up. */
 export async function extractStays(tripId: string): Promise<number> {
   const db = await getDb();
-  const pts = await db.getAllAsync<{ lat: number; lng: number; timestamp: string }>(
+  const pts = await db.getAllAsync<{
+    lat: number;
+    lng: number;
+    timestamp: string;
+  }>(
     "select lat, lng, timestamp from location_points where trip_id = ? order by timestamp",
     [tripId],
   );
   if (pts.length === 0) return 0;
 
-  const stays = clusterStays(pts.map((p) => ({ lat: p.lat, lng: p.lng, timestamp: p.timestamp })));
+  const stays = clusterStays(
+    pts.map((p) => ({ lat: p.lat, lng: p.lng, timestamp: p.timestamp })),
+  );
   const now = nowIso();
   for (const s of stays) {
     await putRow(db, "stays", {

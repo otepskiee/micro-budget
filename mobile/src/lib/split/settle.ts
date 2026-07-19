@@ -13,7 +13,9 @@ export type SettleExpense = {
 export type Transfer = { from: string; to: string; amount: number };
 
 /** Net balance per person: positive = others owe them, negative = they owe. */
-export function computeBalances(expenses: SettleExpense[]): Map<string, number> {
+export function computeBalances(
+  expenses: SettleExpense[],
+): Map<string, number> {
   const net = new Map<string, number>();
   const add = (p: string, v: number) => net.set(p, (net.get(p) ?? 0) + v);
   for (const e of expenses) {
@@ -39,7 +41,8 @@ export function simplifyDebts(net: Map<string, number>): Transfer[] {
   let j = 0;
   while (i < debtors.length && j < creditors.length) {
     const amount = Math.min(debtors[i].v, creditors[j].v);
-    if (amount > 0) transfers.push({ from: debtors[i].p, to: creditors[j].p, amount });
+    if (amount > 0)
+      transfers.push({ from: debtors[i].p, to: creditors[j].p, amount });
     debtors[i].v -= amount;
     creditors[j].v -= amount;
     if (debtors[i].v === 0) i++;

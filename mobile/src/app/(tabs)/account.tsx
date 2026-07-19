@@ -2,7 +2,14 @@ import { useCallback, useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useColorScheme } from "nativewind";
-import { Screen, Eyebrow, Ritual, Rule, DottedRule, Stamp } from "@/components/mb";
+import {
+  Screen,
+  Eyebrow,
+  Ritual,
+  Rule,
+  DottedRule,
+  Stamp,
+} from "@/components/mb";
 import { useSession, signInWithEmail, signOut } from "@/lib/auth";
 import { fullSync } from "@/lib/sync";
 import { pendingSyncCount } from "@/lib/db/queries";
@@ -32,7 +39,9 @@ export default function Account() {
     setBusy(false);
     Alert.alert(
       error ? "Couldn't send link" : "Check your email",
-      error ? error.message : "Tap the magic link to sign in and back up your data.",
+      error
+        ? error.message
+        : "Tap the magic link to sign in and back up your data.",
     );
   };
 
@@ -41,36 +50,51 @@ export default function Account() {
     const r = await fullSync();
     setBusy(false);
     pendingSyncCount().then(setPending);
-    Alert.alert("Sync", r.error ?? `Backed up ${r.pushed}, pulled ${r.pulled}.`);
+    Alert.alert(
+      "Sync",
+      r.error ?? `Backed up ${r.pushed}, pulled ${r.pulled}.`,
+    );
   };
 
   return (
     <Screen>
       <View className="px-5 pt-2 flex-1">
         <Ritual className="text-3xl">Account</Ritual>
-        <Eyebrow className="mt-1">Optional · your data lives on this device</Eyebrow>
+        <Eyebrow className="mt-1">
+          Optional · your data lives on this device
+        </Eyebrow>
         <Rule className="mt-3" />
 
         <Eyebrow className="mt-5 mb-2">Backup & sync</Eyebrow>
         {session ? (
           <View>
-            <Text className="text-ink">Signed in as {session.user.email ?? "you"}</Text>
+            <Text className="text-ink">
+              Signed in as {session.user.email ?? "you"}
+            </Text>
             <View className="flex-row mt-2">
               <Stamp tone={pending > 0 ? "amber" : "teal"}>
                 {pending > 0 ? `${pending} to sync` : "all backed up"}
               </Stamp>
             </View>
-            <Pressable onPress={syncNow} disabled={busy} className="bg-ink rounded-md py-3 items-center mt-3">
+            <Pressable
+              onPress={syncNow}
+              disabled={busy}
+              className="bg-ink rounded-md py-3 items-center mt-3"
+            >
               <Text className="text-paper-lit font-bold">Sync now</Text>
             </Pressable>
-            <Pressable onPress={() => signOut()} className="py-3 items-center mt-1">
+            <Pressable
+              onPress={() => signOut()}
+              className="py-3 items-center mt-1"
+            >
               <Text className="text-carbon">Sign out</Text>
             </Pressable>
           </View>
         ) : (
           <View>
             <Text className="text-carbon mb-2">
-              You're using Micro Budget offline. Sign in to back up and sync — nothing here is required.
+              You're using Micro Budget offline. Sign in to back up and sync —
+              nothing here is required.
             </Text>
             <TextInput
               value={email}
@@ -86,11 +110,14 @@ export default function Account() {
               disabled={busy || !email || !isSupabaseConfigured}
               className="bg-ink rounded-md py-3 items-center mt-2"
             >
-              <Text className="text-paper-lit font-bold">Email me a magic link</Text>
+              <Text className="text-paper-lit font-bold">
+                Email me a magic link
+              </Text>
             </Pressable>
             {pending > 0 ? (
               <Text className="text-carbon text-xs mt-2">
-                {pending} local change{pending === 1 ? "" : "s"} waiting to sync.
+                {pending} local change{pending === 1 ? "" : "s"} waiting to
+                sync.
               </Text>
             ) : null}
           </View>
@@ -110,7 +137,9 @@ export default function Account() {
             scheduleNightlyReview().then((ok) =>
               Alert.alert(
                 ok ? "Reminder set" : "Notifications off",
-                ok ? "You'll get a nudge at 8:00 PM to close your day." : "Enable notifications in Settings to get the nightly nudge.",
+                ok
+                  ? "You'll get a nudge at 8:00 PM to close your day."
+                  : "Enable notifications in Settings to get the nightly nudge.",
               ),
             )
           }

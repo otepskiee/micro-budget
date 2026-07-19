@@ -1,6 +1,10 @@
 import { getDb } from "./index";
 import { getMeta } from "./mutations";
-import { computeBalances, simplifyDebts, type SettleExpense } from "../split/settle";
+import {
+  computeBalances,
+  simplifyDebts,
+  type SettleExpense,
+} from "../split/settle";
 import { splitEvenly } from "../money";
 
 export type CatRow = {
@@ -28,7 +32,9 @@ export type TodaySummary = {
   today: ExpenseRow[];
 };
 
-const MONTH = "strftime('%Y-%m', timestamp) = strftime('%Y-%m','now','localtime')";
+// Stored timestamps are UTC ISO; bucket both sides in local time.
+const MONTH =
+  "strftime('%Y-%m', timestamp, 'localtime') = strftime('%Y-%m','now','localtime')";
 
 /** The daily budgeter view — works with no account and no trip. */
 export async function getTodaySummary(): Promise<TodaySummary> {
@@ -45,11 +51,16 @@ export async function getTodaySummary(): Promise<TodaySummary> {
   const spentMinor = spent?.s ?? 0;
   const budgetMinor = budget?.b ?? 0;
 
-  const cats = await db.getAllAsync<{ id: string; name: string; limit: number; spent: number }>(
+  const cats = await db.getAllAsync<{
+    id: string;
+    name: string;
+    limit: number;
+    spent: number;
+  }>(
     `select c.id, c.name, coalesce(b.amount,0) as "limit",
        coalesce((select sum(e.amount) from expenses e
          where e.category_id = c.id and e.deleted_at is null and e.trip_id is null
-         and strftime('%Y-%m', e.timestamp) = strftime('%Y-%m','now','localtime')),0) as spent
+         and strftime('%Y-%m', e.timestamp, 'localtime') = strftime('%Y-%m','now','localtime')),0) as spent
      from categories c
      left join budgets b on b.category_id = c.id and b.cycle = 'monthly' and b.deleted_at is null
      where c.deleted_at is null
@@ -60,23 +71,45 @@ export async function getTodaySummary(): Promise<TodaySummary> {
     name: c.name,
     spent: c.spent,
     limit: c.limit,
-    state: c.limit > 0 && c.spent > c.limit ? "over" : c.limit > 0 && c.spent >= c.limit * 0.85 ? "warn" : "ok",
+    state:
+      c.limit > 0 && c.spent > c.limit
+        ? "over"
+        : c.limit > 0 && c.spent >= c.limit * 0.85
+          ? "warn"
+          : "ok",
   }));
 
   const today = await db.getAllAsync<ExpenseRow>(
     `select e.id, e.timestamp, e.note, e.amount as amount, e.currency, c.name as categoryName
      from expenses e left join categories c on c.id = e.category_id
-     where e.deleted_at is null and e.trip_id is null and date(e.timestamp) = date('now','localtime')
+     where e.deleted_at is null and e.trip_id is null and date(e.timestamp, 'localtime') = date('now','localtime')
      order by e.timestamp desc`,
   );
 
   const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+  ).getDate();
   const daysLeft = Math.max(1, daysInMonth - now.getDate() + 1);
-  const safeTodayMinor = Math.max(0, Math.floor((budgetMinor - spentMinor) / daysLeft));
-  const monthLabel = now.toLocaleString("en-US", { month: "long" }).toUpperCase();
+  const safeTodayMinor = Math.max(
+    0,
+    Math.floor((budgetMinor - spentMinor) / daysLeft),
+  );
+  const monthLabel = now
+    .toLocaleString("en-US", { month: "long" })
+    .toUpperCase();
 
-  return { homeCurrency, monthLabel, budgetMinor, spentMinor, safeTodayMinor, categories, today };
+  return {
+    homeCurrency,
+    monthLabel,
+    budgetMinor,
+    spentMinor,
+    safeTodayMinor,
+    categories,
+    today,
+  };
 }
 
 export type Trip = {
@@ -108,7 +141,9 @@ export async function getTripExpenses(tripId: string): Promise<ExpenseRow[]> {
 
 export async function pendingSyncCount(): Promise<number> {
   const db = await getDb();
-  const r = await db.getFirstAsync<{ n: number }>("select count(*) as n from outbox");
+  const r = await db.getFirstAsync<{ n: number }>(
+    "select count(*) as n from outbox",
+  );
   return r?.n ?? 0;
 }
 
@@ -117,7 +152,12 @@ export type ReviewStay = {
   poi_name: string | null;
   arrived_at: string | null;
   review_status: string;
-  expense?: { id: string; note: string | null; amount: number; currency: string };
+  expense?: {
+    id: string;
+    note: string | null;
+    amount: number;
+    currency: string;
+  };
 };
 
 /** The signature Nightly Review: the day's stops, each matched to an expense or
@@ -135,7 +175,12 @@ export async function getTripReview(tripId: string): Promise<ReviewStay[]> {
   );
   const out: ReviewStay[] = [];
   for (const s of stays) {
-    const e = await db.getFirstAsync<{ id: string; note: string | null; amount: number; currency: string }>(
+    const e = await db.getFirstAsync<{
+      id: string;
+      note: string | null;
+      amount: number;
+      currency: string;
+    }>(
       "select id, note, amount, currency from expenses where stay_id = ? and deleted_at is null limit 1",
       [s.id],
     );
@@ -149,6 +194,9 @@ export type Settlement = {
   fronted: { id: string; name: string; minor: number }[];
   transfers: { fromName: string; toName: string; amount: number }[];
   items: { note: string | null; payerName: string; homeMinor: number }[];
+  /** shared expenses in a foreign currency with no known home rate yet — they
+   * can't be netted until the trip has a money-change; surfaced so the UI warns. */
+  unrated: number;
 };
 
 /** Ghost-split settlement for a trip. Shared expenses split equally among the
@@ -164,25 +212,55 @@ export async function getSettlement(tripId: string): Promise<Settlement> {
     id: string;
     note: string | null;
     amount: number;
+    currency: string;
     paid_by: string | null;
     est: number | null;
   }>(
-    "select id, note, amount, paid_by, estimated_home_amount as est from expenses where trip_id = ? and deleted_at is null",
+    "select id, note, amount, currency, paid_by, estimated_home_amount as est from expenses where trip_id = ? and deleted_at is null",
     [tripId],
   );
-  const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name ?? "You";
+  const nameOf = (id: string | null) =>
+    members.find((m) => m.id === id)?.name ?? "You";
 
   const settleExpenses: SettleExpense[] = [];
   const items: Settlement["items"] = [];
+  let unrated = 0;
   for (const r of rows) {
     if (!r.paid_by || members.length === 0) continue;
-    const homeMinor = r.est ?? r.amount; // est is home currency; fall back to raw
-    const shares = splitEvenly(homeMinor, members.length);
+    // An expense is SHARED only if it has explicit splits rows. Those rows tell us
+    // WHO shares it; the stored share_amount is in the expense's own currency, so we
+    // re-derive the shares in HOME units below. No splits => personal spend, which
+    // doesn't move anyone's balance — skip it.
+    const sp = await db.getAllAsync<{ person_id: string }>(
+      "select person_id from splits where expense_id = ?",
+      [r.id],
+    );
+    const sharers = sp
+      .map((s) => s.person_id)
+      .filter((id) => members.some((m) => m.id === id));
+    if (sharers.length < 2) continue;
+    // Resolve a home-currency value. A foreign expense uses its stored estimate; if
+    // none was captured (logged before a money-change), backfill from the pool rate
+    // now, so doing the change later automatically rescues it into the settlement.
+    let homeMinor: number | null =
+      r.currency === homeCurrency ? r.amount : r.est;
+    if (homeMinor == null && r.currency !== homeCurrency) {
+      const rate = await getPoolRate(tripId, r.currency);
+      if (rate != null) homeMinor = Math.round(r.amount * rate);
+    }
+    if (homeMinor == null) {
+      unrated++; // shared but no rate yet — flag it rather than silently dropping it
+      continue;
+    }
+    const shares = splitEvenly(homeMinor, sharers.length);
     settleExpenses.push({
       id: r.id,
       paidBy: r.paid_by,
       homeMinor,
-      splits: members.map((m, i) => ({ personId: m.id, shareMinor: shares[i] })),
+      splits: sharers.map((pid, i) => ({
+        personId: pid,
+        shareMinor: shares[i],
+      })),
     });
     items.push({ note: r.note, payerName: nameOf(r.paid_by), homeMinor });
   }
@@ -191,14 +269,66 @@ export async function getSettlement(tripId: string): Promise<Settlement> {
   const fronted = members.map((m) => ({
     id: m.id,
     name: m.name,
-    minor: settleExpenses.filter((e) => e.paidBy === m.id).reduce((s, e) => s + e.homeMinor, 0),
+    minor: settleExpenses
+      .filter((e) => e.paidBy === m.id)
+      .reduce((s, e) => s + e.homeMinor, 0),
   }));
   const transfers = simplifyDebts(net).map((t) => ({
     fromName: nameOf(t.from),
     toName: nameOf(t.to),
     amount: t.amount,
   }));
-  return { homeCurrency, fronted, transfers, items };
+  return { homeCurrency, fronted, transfers, items, unrated };
+}
+
+/** The trip's foreign-cash pool rate for a currency (home-minor per foreign-minor). */
+export async function getPoolRate(
+  tripId: string,
+  currency: string,
+): Promise<number | null> {
+  const db = await getDb();
+  const r = await db.getFirstAsync<{ cost_basis_rate: number | null }>(
+    "select cost_basis_rate from accounts where trip_id = ? and type = 'pool' and currency = ? and deleted_at is null order by created_at desc limit 1",
+    [tripId, currency],
+  );
+  return r?.cost_basis_rate ?? null;
+}
+
+export async function getMeId(): Promise<string | null> {
+  const db = await getDb();
+  const r = await db.getFirstAsync<{ id: string }>(
+    "select id from people where is_me = 1 limit 1",
+  );
+  return r?.id ?? null;
+}
+
+export async function getTripMembers(
+  tripId: string,
+): Promise<{ id: string; name: string }[]> {
+  const db = await getDb();
+  return db.getAllAsync<{ id: string; name: string }>(
+    "select p.id, p.name from trip_members tm join people p on p.id = tm.person_id where tm.trip_id = ? order by p.is_me desc, p.name",
+    [tripId],
+  );
+}
+
+export async function getTripMemberIds(tripId: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ person_id: string }>(
+    "select person_id from trip_members where trip_id = ?",
+    [tripId],
+  );
+  return rows.map((r) => r.person_id);
+}
+
+/** A trip's spending currency (stored in trips.home_currency). */
+export async function getTripCurrency(tripId: string): Promise<string> {
+  const db = await getDb();
+  const r = await db.getFirstAsync<{ home_currency: string }>(
+    "select home_currency from trips where id = ? and deleted_at is null",
+    [tripId],
+  );
+  return r?.home_currency ?? "USD";
 }
 
 export async function getCategories(): Promise<{ id: string; name: string }[]> {

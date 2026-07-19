@@ -4,6 +4,7 @@
 module.exports = {
   content: ["./src/**/*.{ts,tsx}"],
   presets: [require("nativewind/preset")],
+  darkMode: "class", // lets the in-app toggle drive the theme (not just the OS)
   theme: {
     extend: {
       colors: {

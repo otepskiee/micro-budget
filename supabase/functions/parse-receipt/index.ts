@@ -15,6 +15,10 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Guardrails: Claude vision caps images ~5MB; base64 inflates bytes ~1.37×.
+const MAX_BASE64_LEN = 7_000_000; // ≈ 5 MB decoded
+const ALLOWED_MEDIA = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -49,13 +53,28 @@ Deno.serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
+    if (!apiKey) {
+      // Don't echo the secret's name/state to the client — log it server-side only.
+      console.error("parse-receipt: ANTHROPIC_API_KEY is not set");
+      return json({ error: "Receipt scanning is temporarily unavailable." }, 500);
+    }
 
     // TODO(paid-gate): look up the caller's entitlement (profiles.tier / RevenueCat)
     // and 402 if they're on the free tier. JWT verification already blocks anon.
 
-    const { imageBase64, mediaType } = await req.json();
-    if (!imageBase64) return json({ error: "imageBase64 is required" }, 400);
+    const { imageBase64, mediaType } = await req.json().catch(() => ({}));
+    if (typeof imageBase64 !== "string" || !imageBase64) {
+      return json({ error: "imageBase64 is required" }, 400);
+    }
+    if (imageBase64.length > MAX_BASE64_LEN) {
+      return json({ error: "Image is too large (max ~5 MB)." }, 413);
+    }
+    // MIME types are case-insensitive (RFC 6838); normalise before the allowlist
+    // check and before handing the value to Anthropic, which expects lowercase.
+    const media = (typeof mediaType === "string" && mediaType ? mediaType : "image/jpeg").toLowerCase();
+    if (!ALLOWED_MEDIA.has(media)) {
+      return json({ error: "Unsupported image type. Use JPEG, PNG, WebP, or GIF." }, 415);
+    }
 
     const anthropic = new Anthropic({ apiKey });
     const response = await anthropic.messages.create({
@@ -68,7 +87,7 @@ Deno.serve(async (req) => {
           content: [
             {
               type: "image",
-              source: { type: "base64", media_type: mediaType ?? "image/jpeg", data: imageBase64 },
+              source: { type: "base64", media_type: media, data: imageBase64 },
             },
             {
               type: "text",
@@ -86,6 +105,9 @@ Deno.serve(async (req) => {
     const parsed = block && "text" in block ? JSON.parse(block.text) : null;
     return json({ parsed, model: response.model });
   } catch (e) {
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    // Log the detail server-side; return a generic message so we never leak
+    // internals (key state, upstream errors) to the client.
+    console.error("parse-receipt failed:", e);
+    return json({ error: "Failed to parse the receipt. Please try again." }, 500);
   }
 });

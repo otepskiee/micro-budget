@@ -1,4 +1,5 @@
 import "../global.css";
+import "@/lib/geo/tracking"; // register the background-location task at every launch (incl. headless)
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
@@ -37,7 +38,10 @@ export default function RootLayout() {
       {ready && fontsLoaded ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="expense/new" options={{ presentation: "modal" }} />
+          <Stack.Screen
+            name="expense/new"
+            options={{ presentation: "modal" }}
+          />
         </Stack>
       ) : (
         <View className="flex-1 bg-paper" />

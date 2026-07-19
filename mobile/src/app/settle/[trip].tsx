@@ -27,7 +27,10 @@ export default function Settle() {
 
   const exportSummary = async () => {
     const lines = s.transfers.length
-      ? s.transfers.map((t) => `${t.fromName} owes ${t.toName} ${format(t.amount, s.homeCurrency)}`)
+      ? s.transfers.map(
+          (t) =>
+            `${t.fromName} owes ${t.toName} ${format(t.amount, s.homeCurrency)}`,
+        )
       : ["All settled — nobody owes anyone."];
     capture("settlement_exported");
     await Share.share({
@@ -45,47 +48,91 @@ export default function Settle() {
               <Text className="text-carbon">Done</Text>
             </Pressable>
           </View>
-          <Eyebrow className="mt-1">Ghost split · settle outside the app</Eyebrow>
+          <Eyebrow className="mt-1">
+            Ghost split · settle outside the app
+          </Eyebrow>
           <Rule className="mt-3" />
 
           <Eyebrow className="mt-4 mb-1">Fronted</Eyebrow>
           {s.fronted.map((f) => (
-            <View key={f.id} className="flex-row justify-between py-2 border-t border-hair">
+            <View
+              key={f.id}
+              className="flex-row justify-between py-2 border-t border-hair"
+            >
               <Text className="text-ink font-semibold">{f.name}</Text>
-              <Money minor={f.minor} currency={s.homeCurrency} className="text-sm" />
+              <Money
+                minor={f.minor}
+                currency={s.homeCurrency}
+                className="text-sm"
+              />
             </View>
           ))}
 
           <View className="mt-5 border-t-2 border-b-2 border-amber-ink py-3">
             {s.transfers.length === 0 ? (
-              <Text className="text-teal font-bold">All settled — nobody owes anyone.</Text>
+              <Text className="text-teal font-bold">
+                All settled — nobody owes anyone.
+              </Text>
             ) : (
               s.transfers.map((t, i) => (
                 <View key={i}>
                   <Eyebrow className="text-amber-ink">
                     {t.fromName} owes {t.toName}
                   </Eyebrow>
-                  <Money minor={t.amount} currency={s.homeCurrency} className="text-amber-ink text-2xl mt-1" />
+                  <Money
+                    minor={t.amount}
+                    currency={s.homeCurrency}
+                    className="text-amber-ink text-2xl mt-1"
+                  />
                 </View>
               ))
             )}
           </View>
 
+          {s.unrated > 0 ? (
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/changer/[trip]", params: { trip } })
+              }
+              className="mt-4 border border-amber-ink rounded-md p-3"
+            >
+              <Eyebrow className="text-amber-ink">
+                {s.unrated} shared {s.unrated === 1 ? "expense" : "expenses"}{" "}
+                can't be settled yet
+              </Eyebrow>
+              <Text className="text-carbon text-xs mt-1">
+                They're in a foreign currency with no rate. Log a money-change
+                and they'll settle automatically. Tap to open Money changer.
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Eyebrow className="mt-5 mb-1">Shared items</Eyebrow>
           {s.items.map((it, i) => (
-            <View key={i} className="flex-row justify-between py-2 border-t border-hair">
+            <View
+              key={i}
+              className="flex-row justify-between py-2 border-t border-hair"
+            >
               <Text className="text-ink flex-1" numberOfLines={1}>
                 {it.note ?? "Expense"} · {it.payerName}
               </Text>
-              <Money minor={it.homeMinor} currency={s.homeCurrency} className="text-sm" />
+              <Money
+                minor={it.homeMinor}
+                currency={s.homeCurrency}
+                className="text-sm"
+              />
             </View>
           ))}
 
-          <Pressable onPress={exportSummary} className="bg-ink rounded-md py-3.5 items-center mt-6">
+          <Pressable
+            onPress={exportSummary}
+            className="bg-ink rounded-md py-3.5 items-center mt-6"
+          >
             <Text className="text-paper-lit font-bold">Share summary</Text>
           </Pressable>
           <Text className="text-carbon text-xs mt-3">
-            Companions don't need the app. Send them the summary and settle for real.
+            Companions don't need the app. Send them the summary and settle for
+            real.
           </Text>
         </View>
       </ScrollView>

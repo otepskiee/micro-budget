@@ -15,7 +15,13 @@ export function Screen({ children }: { children: ReactNode }) {
   );
 }
 
-export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+export function Eyebrow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <Text
       style={{ fontFamily: fonts.mono }}
@@ -26,17 +32,34 @@ export function Eyebrow({ children, className }: { children: ReactNode; classNam
   );
 }
 
-export function Ritual({ children, className }: { children: ReactNode; className?: string }) {
+export function Ritual({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <Text className={`text-ink font-extrabold uppercase tracking-[0.02em] ${className ?? ""}`}>
+    <Text
+      className={`text-ink font-extrabold uppercase tracking-[0.02em] ${className ?? ""}`}
+    >
       {children}
     </Text>
   );
 }
 
-export function Mono({ children, className }: { children: ReactNode; className?: string }) {
+export function Mono({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <Text style={{ fontFamily: fonts.mono }} className={`text-ink ${className ?? ""}`}>
+    <Text
+      style={{ fontFamily: fonts.mono }}
+      className={`text-ink ${className ?? ""}`}
+    >
       {children}
     </Text>
   );
@@ -52,7 +75,10 @@ export function Money({
   className?: string;
 }) {
   return (
-    <Text style={{ fontFamily: fonts.mono }} className={`text-ink ${className ?? ""}`}>
+    <Text
+      style={{ fontFamily: fonts.mono }}
+      className={`text-ink ${className ?? ""}`}
+    >
       {format(minor, currency)}
     </Text>
   );
@@ -63,11 +89,19 @@ export function Rule({ className }: { className?: string }) {
 }
 
 export function DottedRule({ className }: { className?: string }) {
-  return <View className={`border-t border-dashed border-hair ${className ?? ""}`} />;
+  return (
+    <View className={`border-t border-dashed border-hair ${className ?? ""}`} />
+  );
 }
 
 type Tone = "teal" | "amber" | "red" | "ink";
-export function Stamp({ tone = "ink", children }: { tone?: Tone; children: ReactNode }) {
+export function Stamp({
+  tone = "ink",
+  children,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+}) {
   const c =
     tone === "teal"
       ? "text-teal border-teal"
@@ -86,11 +120,21 @@ export function Stamp({ tone = "ink", children }: { tone?: Tone; children: React
   );
 }
 
-export function Bar({ pct, state }: { pct: number; state: "ok" | "warn" | "over" }) {
-  const fill = state === "over" ? "bg-red" : state === "warn" ? "bg-amber" : "bg-ink";
+export function Bar({
+  pct,
+  state,
+}: {
+  pct: number;
+  state: "ok" | "warn" | "over";
+}) {
+  const fill =
+    state === "over" ? "bg-red" : state === "warn" ? "bg-amber" : "bg-ink";
   return (
     <View className="h-[7px] border border-ink bg-paper-lit">
-      <View className={`h-full ${fill}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+      <View
+        className={`h-full ${fill}`}
+        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+      />
     </View>
   );
 }

@@ -2,7 +2,12 @@
 // review is built on these. Tune radius/dwell against real data (a traffic jam
 // must not become a stay). Pure + tested (scripts/verify-logic.ts).
 
-export type Point = { lat: number; lng: number; timestamp: string; accuracy?: number };
+export type Point = {
+  lat: number;
+  lng: number;
+  timestamp: string;
+  accuracy?: number;
+};
 export type Stay = {
   lat: number;
   lng: number;
@@ -13,7 +18,12 @@ export type Stay = {
 
 const EARTH_M = 6371000;
 
-export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+export function haversineMeters(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(bLat - aLat);
   const dLng = toRad(bLng - aLng);
@@ -29,7 +39,9 @@ export function clusterStays(
 ): Stay[] {
   const radius = opts.radiusM ?? 50;
   const minDwell = opts.minDwellMs ?? 10 * 60 * 1000; // 10 minutes
-  const sorted = [...points].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const sorted = [...points].sort((a, b) =>
+    a.timestamp.localeCompare(b.timestamp),
+  );
 
   const stays: Stay[] = [];
   let cluster: Point[] = [];
@@ -40,9 +52,16 @@ export function clusterStays(
     if (cluster.length === 0) return;
     const arrivedAt = cluster[0].timestamp;
     const departedAt = cluster[cluster.length - 1].timestamp;
-    const dwell = new Date(departedAt).getTime() - new Date(arrivedAt).getTime();
+    const dwell =
+      new Date(departedAt).getTime() - new Date(arrivedAt).getTime();
     if (dwell >= minDwell) {
-      stays.push({ lat: cLat, lng: cLng, arrivedAt, departedAt, count: cluster.length });
+      stays.push({
+        lat: cLat,
+        lng: cLng,
+        arrivedAt,
+        departedAt,
+        count: cluster.length,
+      });
     }
     cluster = [];
   };

@@ -32,7 +32,8 @@ export function format(
   const int = Math.floor(abs / scale);
   const frac = abs % scale;
   let out = group(String(int));
-  if (dec > 0 && !(trim && frac === 0)) out += "." + String(frac).padStart(dec, "0");
+  if (dec > 0 && !(trim && frac === 0))
+    out += "." + String(frac).padStart(dec, "0");
   return (withCode ? code.toUpperCase() + " " : "") + (neg ? "-" : "") + out;
 }
 

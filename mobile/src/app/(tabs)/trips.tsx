@@ -1,9 +1,22 @@
 import { useCallback, useState } from "react";
 import { ScrollView, Text, View, Pressable, Alert } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { getTrips, getTripExpenses, type Trip, type ExpenseRow } from "@/lib/db/queries";
+import {
+  getTrips,
+  getTripExpenses,
+  type Trip,
+  type ExpenseRow,
+} from "@/lib/db/queries";
 import { startTripTracking } from "@/lib/geo/tracking";
-import { Screen, Eyebrow, Ritual, Rule, DottedRule, Money, Stamp } from "@/components/mb";
+import {
+  Screen,
+  Eyebrow,
+  Ritual,
+  Rule,
+  DottedRule,
+  Money,
+  Stamp,
+} from "@/components/mb";
 
 export default function Trips() {
   const router = useRouter();
@@ -42,7 +55,9 @@ export default function Trips() {
           <Eyebrow className="mt-1">Travel mode · multi-currency</Eyebrow>
           <Rule className="mt-3" />
 
-          {trips.length === 0 ? <Text className="text-carbon mt-4">No trips yet.</Text> : null}
+          {trips.length === 0 ? (
+            <Text className="text-carbon mt-4">No trips yet.</Text>
+          ) : null}
 
           {trips.map((t) => (
             <View key={t.id} className="mt-5">
@@ -52,21 +67,38 @@ export default function Trips() {
               </View>
               <DottedRule className="mt-2" />
               {(expenses[t.id] ?? []).map((e) => (
-                <View key={e.id} className="flex-row items-center py-2 border-t border-hair">
+                <View
+                  key={e.id}
+                  className="flex-row items-center py-2 border-t border-hair"
+                >
                   <Text className="text-ink flex-1">{e.note ?? "Expense"}</Text>
-                  <Money minor={e.amount} currency={e.currency} className="text-sm" />
+                  <Money
+                    minor={e.amount}
+                    currency={e.currency}
+                    className="text-sm"
+                  />
                 </View>
               ))}
               <View className="mt-3 gap-2">
                 <View className="flex-row gap-2">
                   <Pressable
-                    onPress={() => router.push({ pathname: "/review/[trip]", params: { trip: t.id } })}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/review/[trip]",
+                        params: { trip: t.id },
+                      })
+                    }
                     className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
                   >
                     <Text className="text-ink font-bold">Nightly review</Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => router.push({ pathname: "/settle/[trip]", params: { trip: t.id } })}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/settle/[trip]",
+                        params: { trip: t.id },
+                      })
+                    }
                     className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
                   >
                     <Text className="text-ink font-bold">Settle up</Text>
@@ -89,10 +121,39 @@ export default function Trips() {
                     <Text className="text-carbon">Track</Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => router.push({ pathname: "/changer/[trip]", params: { trip: t.id } })}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/changer/[trip]",
+                        params: { trip: t.id },
+                      })
+                    }
                     className="flex-1 border border-hair rounded-md py-2.5 items-center"
                   >
                     <Text className="text-carbon">Money changer</Text>
+                  </Pressable>
+                </View>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/expense/new",
+                        params: { tripId: t.id, currency: t.home_currency },
+                      })
+                    }
+                    className="flex-1 border border-hair rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-carbon">Log expense</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/companion/[trip]",
+                        params: { trip: t.id },
+                      })
+                    }
+                    className="flex-1 border border-hair rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-carbon">Companions</Text>
                   </Pressable>
                 </View>
               </View>
@@ -100,7 +161,8 @@ export default function Trips() {
           ))}
 
           <Text className="text-carbon text-xs mt-8">
-            The signature Nightly Review — geo-trail + amber gap recovery — attaches to a trip. Wired next.
+            Turn on tracking during a trip, then open the Nightly Review to
+            recover anything you forgot to log.
           </Text>
         </View>
       </ScrollView>

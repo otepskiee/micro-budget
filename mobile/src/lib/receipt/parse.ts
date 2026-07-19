@@ -30,13 +30,15 @@ function normalizeNumber(token: string): number | null {
   let t = token;
   if (hasComma && hasDot) {
     // the LAST separator is the decimal point; the other is thousands
-    if (token.lastIndexOf(",") > token.lastIndexOf(".")) t = token.replace(/\./g, "").replace(",", ".");
+    if (token.lastIndexOf(",") > token.lastIndexOf("."))
+      t = token.replace(/\./g, "").replace(",", ".");
     else t = token.replace(/,/g, "");
   } else if (hasComma) {
     const after = token.length - token.lastIndexOf(",") - 1;
     const single = token.indexOf(",") === token.lastIndexOf(",");
     // "220,00" is a decimal; "220,000" / "1,234" are thousands
-    t = after === 2 && single ? token.replace(",", ".") : token.replace(/,/g, "");
+    t =
+      after === 2 && single ? token.replace(",", ".") : token.replace(/,/g, "");
   } else if (hasDot) {
     const after = token.length - token.lastIndexOf(".") - 1;
     const single = token.indexOf(".") === token.lastIndexOf(".");
@@ -92,7 +94,10 @@ function detectDate(text: string): string | null {
   return null;
 }
 
-export function parseReceiptText(raw: string, homeCurrency = "PHP"): ParsedReceipt {
+export function parseReceiptText(
+  raw: string,
+  homeCurrency = "PHP",
+): ParsedReceipt {
   const lines = raw
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -101,7 +106,9 @@ export function parseReceiptText(raw: string, homeCurrency = "PHP"): ParsedRecei
   const currency = detectCurrency(text, homeCurrency);
 
   // total: prefer a line mentioning total/amount due/balance; else the largest number
-  const totalLine = lines.find((l) => /\b(grand\s*)?total\b|amount\s*due|balance\s*due/i.test(l));
+  const totalLine = lines.find((l) =>
+    /\b(grand\s*)?total\b|amount\s*due|balance\s*due/i.test(l),
+  );
   let totalMajor: number | null = totalLine ? largestIn(totalLine) : null;
   const usedKeyword = totalMajor != null;
   if (totalMajor == null) {
@@ -110,7 +117,9 @@ export function parseReceiptText(raw: string, homeCurrency = "PHP"): ParsedRecei
   }
 
   const merchant =
-    lines.find((l) => /[A-Za-z]/.test(l) && !/receipt|invoice|total|date|time/i.test(l)) ?? null;
+    lines.find(
+      (l) => /[A-Za-z]/.test(l) && !/receipt|invoice|total|date|time/i.test(l),
+    ) ?? null;
   const date = detectDate(text);
 
   let confidence = 0;

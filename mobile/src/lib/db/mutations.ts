@@ -12,7 +12,13 @@ function toSqlite(v: string | number | boolean | null): string | number | null {
   return v ?? null;
 }
 
-async function enqueue(db: SQLiteDatabase, entity: string, id: string, op: "upsert" | "delete", payload: Row) {
+async function enqueue(
+  db: SQLiteDatabase,
+  entity: string,
+  id: string,
+  op: "upsert" | "delete",
+  payload: Row,
+) {
   await db.runAsync(
     "insert into outbox (entity, entity_id, op, payload, created_at) values (?,?,?,?,?)",
     [entity, id, op, JSON.stringify(payload), nowIso()],
@@ -168,10 +174,57 @@ export async function addPoolFromChange(c: {
       updated_at: now,
       deleted_at: null,
     });
+
+    // Backfill: any earlier trip expense in this currency that had no home estimate
+    // (logged before a rate existed) now gets one from this cost basis. This is the
+    // product's core promise — you learn what that VND spend cost in home money the
+    // moment you change cash. Re-put each row (full columns) so the update also
+    // enqueues for sync. Without a trip we can't scope safely, so skip.
+    if (c.tripId) {
+      const pending = await db.getAllAsync<Row>(
+        "select * from expenses where trip_id = ? and currency = ? and estimated_home_amount is null and deleted_at is null",
+        [c.tripId, c.gotCurrency],
+      );
+      for (const row of pending) {
+        const est = Math.round(Number(row.amount) * costBasis);
+        await putRow(db, "expenses", {
+          ...row,
+          estimated_home_amount: est,
+          updated_at: now,
+        });
+      }
+    }
   });
 }
 
-export async function addTrip(t: { name: string; homeCurrency: string }): Promise<string> {
+export async function addPerson(name: string): Promise<string> {
+  const db = await getDb();
+  const id = uid();
+  const now = nowIso();
+  await putRow(db, "people", {
+    id,
+    name,
+    avatar_emoji: null,
+    is_me: false,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+  return id;
+}
+
+export async function addTripMember(
+  tripId: string,
+  personId: string,
+): Promise<void> {
+  const db = await getDb();
+  await putRow(db, "trip_members", { trip_id: tripId, person_id: personId });
+}
+
+export async function addTrip(t: {
+  name: string;
+  homeCurrency: string;
+}): Promise<string> {
   const db = await getDb();
   const id = uid();
   const now = nowIso();
@@ -188,7 +241,9 @@ export async function addTrip(t: { name: string; homeCurrency: string }): Promis
       updated_at: now,
       deleted_at: null,
     });
-    const me = await db.getFirstAsync<{ id: string }>("select id from people where is_me = 1 limit 1");
+    const me = await db.getFirstAsync<{ id: string }>(
+      "select id from people where is_me = 1 limit 1",
+    );
     if (me) await putRow(db, "trip_members", { trip_id: id, person_id: me.id });
   });
   return id;
@@ -214,20 +269,25 @@ export async function updateStayReview(
   status: "unreviewed" | "no_spend" | "matched",
 ): Promise<void> {
   const db = await getDb();
-  await db.runAsync("update stays set review_status = ?, updated_at = ? where id = ?", [
-    status,
-    nowIso(),
-    stayId,
-  ]);
+  await db.runAsync(
+    "update stays set review_status = ?, updated_at = ? where id = ?",
+    [status, nowIso(), stayId],
+  );
 }
 
 export async function getMeta(key: string, fallback: string): Promise<string> {
   const db = await getDb();
-  const row = await db.getFirstAsync<{ value: string }>("select value from sync_meta where key = ?", [key]);
+  const row = await db.getFirstAsync<{ value: string }>(
+    "select value from sync_meta where key = ?",
+    [key],
+  );
   return row?.value ?? fallback;
 }
 
 export async function setMeta(key: string, value: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("insert or replace into sync_meta (key, value) values (?, ?)", [key, value]);
+  await db.runAsync(
+    "insert or replace into sync_meta (key, value) values (?, ?)",
+    [key, value],
+  );
 }

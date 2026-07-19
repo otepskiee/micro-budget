@@ -30,15 +30,24 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: "Today", tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} /> }}
+        options={{
+          title: "Today",
+          tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} />,
+        }}
       />
       <Tabs.Screen
         name="trips"
-        options={{ title: "Trips", tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} /> }}
+        options={{
+          title: "Trips",
+          tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} />,
+        }}
       />
       <Tabs.Screen
         name="account"
-        options={{ title: "Account", tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} /> }}
+        options={{
+          title: "Account",
+          tabBarIcon: ({ focused }) => <Dot color={p.ink} active={focused} />,
+        }}
       />
     </Tabs>
   );
