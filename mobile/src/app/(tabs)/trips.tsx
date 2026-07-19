@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { ScrollView, Text, View, Pressable, Alert } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { getTrips, getTripExpenses, type Trip, type ExpenseRow } from "@/lib/db/queries";
+import { startTripTracking } from "@/lib/geo/tracking";
 import { Screen, Eyebrow, Ritual, Rule, DottedRule, Money, Stamp } from "@/components/mb";
 
 export default function Trips() {
+  const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [expenses, setExpenses] = useState<Record<string, ExpenseRow[]>>({});
 
@@ -47,6 +49,29 @@ export default function Trips() {
                   <Money minor={e.amount} currency={e.currency} className="text-sm" />
                 </View>
               ))}
+              <View className="flex-row gap-2 mt-3">
+                <Pressable
+                  onPress={() => router.push({ pathname: "/review/[trip]", params: { trip: t.id } })}
+                  className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
+                >
+                  <Text className="text-ink font-bold">Nightly review</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    startTripTracking(t.id).then((ok) =>
+                      Alert.alert(
+                        ok ? "Tracking on" : "Location needed",
+                        ok
+                          ? "Your day will fill the trail — low-power, trip only."
+                          : "Enable location to trace this trip and catch forgotten spend.",
+                      ),
+                    )
+                  }
+                  className="border border-hair rounded-md py-2.5 px-4 items-center justify-center"
+                >
+                  <Text className="text-carbon">Track</Text>
+                </Pressable>
+              </View>
             </View>
           ))}
 

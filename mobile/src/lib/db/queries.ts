@@ -110,6 +110,38 @@ export async function pendingSyncCount(): Promise<number> {
   return r?.n ?? 0;
 }
 
+export type ReviewStay = {
+  id: string;
+  poi_name: string | null;
+  arrived_at: string | null;
+  review_status: string;
+  expense?: { id: string; note: string | null; amount: number; currency: string };
+};
+
+/** The signature Nightly Review: the day's stops, each matched to an expense or
+ * left as a gap ("you stopped here — spend anything?"). */
+export async function getTripReview(tripId: string): Promise<ReviewStay[]> {
+  const db = await getDb();
+  const stays = await db.getAllAsync<{
+    id: string;
+    poi_name: string | null;
+    arrived_at: string | null;
+    review_status: string;
+  }>(
+    "select id, poi_name, arrived_at, review_status from stays where trip_id = ? and deleted_at is null order by arrived_at",
+    [tripId],
+  );
+  const out: ReviewStay[] = [];
+  for (const s of stays) {
+    const e = await db.getFirstAsync<{ id: string; note: string | null; amount: number; currency: string }>(
+      "select id, note, amount, currency from expenses where stay_id = ? and deleted_at is null limit 1",
+      [s.id],
+    );
+    out.push({ ...s, expense: e ?? undefined });
+  }
+  return out;
+}
+
 export async function getCategories(): Promise<{ id: string; name: string }[]> {
   const db = await getDb();
   return db.getAllAsync<{ id: string; name: string }>(

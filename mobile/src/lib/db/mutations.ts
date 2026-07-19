@@ -47,6 +47,8 @@ export type NewExpense = {
   note?: string | null;
   timestamp?: string;
   estimatedHomeMinor?: number | null;
+  receiptId?: string | null;
+  stayId?: string | null;
   /** person ids to split equally with (including the payer). */
   splitWith?: string[];
 };
@@ -70,6 +72,8 @@ export async function addExpense(e: NewExpense): Promise<string> {
       note: e.note ?? null,
       settlement_status: "confirmed",
       estimated_home_amount: e.estimatedHomeMinor ?? null,
+      receipt_id: e.receiptId ?? null,
+      stay_id: e.stayId ?? null,
       created_at: now,
       updated_at: now,
     });
@@ -85,6 +89,57 @@ export async function addExpense(e: NewExpense): Promise<string> {
     }
   });
   return id;
+}
+
+export async function addReceipt(r: {
+  imageLocalPath?: string | null;
+  parsedJson?: string | null;
+  parseMethod?: "mlkit" | "ai" | "manual";
+  status?: "unprocessed" | "parsed" | "matched";
+}): Promise<string> {
+  const db = await getDb();
+  const id = uid();
+  const now = nowIso();
+  await putRow(db, "receipts", {
+    id,
+    image_local_path: r.imageLocalPath ?? null,
+    image_remote_path: null,
+    ocr_raw_text: null,
+    parsed_json: r.parsedJson ?? null,
+    parse_method: r.parseMethod ?? "manual",
+    status: r.status ?? "unprocessed",
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+  return id;
+}
+
+export async function addLocationPoint(p: {
+  tripId: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  timestamp: string;
+}): Promise<void> {
+  const db = await getDb();
+  // Raw GPS is working data — not synced; pruned after stays are extracted.
+  await db.runAsync(
+    "insert into location_points (id, trip_id, lat, lng, accuracy, timestamp) values (?,?,?,?,?,?)",
+    [uid(), p.tripId, p.lat, p.lng, p.accuracy, p.timestamp],
+  );
+}
+
+export async function updateStayReview(
+  stayId: string,
+  status: "unreviewed" | "no_spend" | "matched",
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync("update stays set review_status = ?, updated_at = ? where id = ?", [
+    status,
+    nowIso(),
+    stayId,
+  ]);
 }
 
 export async function getMeta(key: string, fallback: string): Promise<string> {

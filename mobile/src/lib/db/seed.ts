@@ -58,14 +58,34 @@ export async function seedIfEmpty(): Promise<void> {
   await putRow(db, "trips", { id: trip, name: "Hanoi", start_date: null, end_date: null, home_currency: "PHP", location_tracking_enabled: false, status: "active", created_at: now, updated_at: now, deleted_at: null }, S);
   await putRow(db, "trip_members", { trip_id: trip, person_id: me }, S);
   await putRow(db, "trip_members", { trip_id: trip, person_id: yana }, S);
-  const trav = async (minor: number, note: string, estPhp: number) =>
-    putRow(db, "expenses", {
-      id: uid(), account_id: null, amount: minor, currency: "VND", category_id: catId["Food"],
-      trip_id: trip, paid_by: me, timestamp: nowIso(), note, settlement_status: "confirmed",
-      estimated_home_amount: estPhp, actual_home_amount: null, receipt_id: null, stay_id: null,
+  // the day's stops (dwells) — two matched to expenses, two left as gaps
+  const at = (h: number, m: number) => {
+    const x = new Date();
+    x.setHours(h, m, 0, 0);
+    return x.toISOString();
+  };
+  const stay = async (poi: string, h: number, m: number, status: string) => {
+    const id = uid();
+    await putRow(db, "stays", {
+      id, trip_id: trip, lat: null, lng: null, arrived_at: at(h, m), departed_at: null,
+      poi_name: poi, poi_category: null, poi_place_id: null, review_status: status,
       created_at: now, updated_at: now, deleted_at: null,
     }, S);
-  await trav(90000, "Cộng Càphê", 20000); // VND 90,000 ≈ PHP 200
-  await trav(220000, "Bún Chả Hương Liên", 48889);
-  await trav(68000, "Grab ride", 15100);
+    return id;
+  };
+  const travAt = async (minor: number, note: string, estPhp: number, stayId: string, h: number, m: number) =>
+    putRow(db, "expenses", {
+      id: uid(), account_id: null, amount: minor, currency: "VND", category_id: catId["Food"],
+      trip_id: trip, paid_by: me, timestamp: at(h, m), note, settlement_status: "confirmed",
+      estimated_home_amount: estPhp, actual_home_amount: null, receipt_id: null, stay_id: stayId,
+      created_at: now, updated_at: now, deleted_at: null,
+    }, S);
+
+  await stay("The Chi Boutique", 8, 32, "no_spend");
+  const sCafe = await stay("Cộng Càphê", 9, 24, "matched");
+  await travAt(90000, "Egg coffee ×2", 20000, sCafe, 9, 24); // VND 90,000 ≈ PHP 200
+  await stay("Hoàn Kiếm Lake", 10, 41, "unreviewed"); // GAP
+  const sLunch = await stay("Bún Chả Hương Liên", 12, 15, "matched");
+  await travAt(220000, "Bún Chả lunch", 48889, sLunch, 12, 15);
+  await stay("Đồng Xuân Market", 14, 5, "unreviewed"); // GAP
 }
