@@ -6,6 +6,7 @@ import {
   type SettleExpense,
 } from "../split/settle";
 import { splitEvenly } from "../money";
+import { referenceCostBasis } from "../fx/reference";
 
 export type CatRow = {
   id: string;
@@ -194,8 +195,11 @@ export type Settlement = {
   fronted: { id: string; name: string; minor: number }[];
   transfers: { fromName: string; toName: string; amount: number }[];
   items: { note: string | null; payerName: string; homeMinor: number }[];
-  /** shared expenses in a foreign currency with no known home rate yet — they
-   * can't be netted until the trip has a money-change; surfaced so the UI warns. */
+  /** shared foreign expenses netted at the approximate reference rate (no
+   * money-change on this trip yet) — counted so the UI can flag them as estimates. */
+  estimated: number;
+  /** shared foreign expenses in a currency we have no rate for at all (no pool and
+   * no reference) — can't be netted; surfaced so the UI warns rather than dropping. */
   unrated: number;
 };
 
@@ -225,6 +229,7 @@ export async function getSettlement(tripId: string): Promise<Settlement> {
   const settleExpenses: SettleExpense[] = [];
   const items: Settlement["items"] = [];
   let unrated = 0;
+  let estimated = 0;
   for (const r of rows) {
     if (!r.paid_by || members.length === 0) continue;
     // An expense is SHARED only if it has explicit splits rows. Those rows tell us
@@ -239,19 +244,31 @@ export async function getSettlement(tripId: string): Promise<Settlement> {
       .map((s) => s.person_id)
       .filter((id) => members.some((m) => m.id === id));
     if (sharers.length < 2) continue;
-    // Resolve a home-currency value. A foreign expense uses its stored estimate; if
-    // none was captured (logged before a money-change), backfill from the pool rate
-    // now, so doing the change later automatically rescues it into the settlement.
+    // Resolve a home-currency value, best rate first:
+    //   1. a stored estimate (written by the pool backfill at money-change time),
+    //   2. the trip's live pool rate (a real money-change happened),
+    //   3. the approximate reference rate — a default so nothing is silently dropped.
+    // The moment a real change happens, (1)/(2) take over and the estimate upgrades.
     let homeMinor: number | null =
       r.currency === homeCurrency ? r.amount : r.est;
+    let approx = false;
     if (homeMinor == null && r.currency !== homeCurrency) {
       const rate = await getPoolRate(tripId, r.currency);
-      if (rate != null) homeMinor = Math.round(r.amount * rate);
+      if (rate != null) {
+        homeMinor = Math.round(r.amount * rate);
+      } else {
+        const ref = referenceCostBasis(r.currency, homeCurrency);
+        if (ref != null) {
+          homeMinor = Math.round(r.amount * ref);
+          approx = true;
+        }
+      }
     }
     if (homeMinor == null) {
-      unrated++; // shared but no rate yet — flag it rather than silently dropping it
+      unrated++; // no pool and no reference for this currency — can't net it
       continue;
     }
+    if (approx) estimated++;
     const shares = splitEvenly(homeMinor, sharers.length);
     settleExpenses.push({
       id: r.id,
@@ -278,7 +295,7 @@ export async function getSettlement(tripId: string): Promise<Settlement> {
     toName: nameOf(t.to),
     amount: t.amount,
   }));
-  return { homeCurrency, fronted, transfers, items, unrated };
+  return { homeCurrency, fronted, transfers, items, estimated, unrated };
 }
 
 /** The trip's foreign-cash pool rate for a currency (home-minor per foreign-minor). */

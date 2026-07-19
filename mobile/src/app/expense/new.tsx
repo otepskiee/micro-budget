@@ -10,6 +10,7 @@ import {
   getMeId,
 } from "@/lib/db/queries";
 import { parseAmount, format, toMajor } from "@/lib/money";
+import { referenceCostBasis } from "@/lib/fx/reference";
 import { fonts } from "@/lib/theme";
 import { capture } from "@/lib/analytics";
 import { captureReceipt } from "@/lib/receipt/capture";
@@ -50,6 +51,13 @@ export default function NewExpense() {
     if (tripId && currency !== "PHP")
       getPoolRate(tripId, currency).then(setPoolRate);
   }, [tripId, currency]);
+  // Preview a home value from the best rate available: the trip's own pool if a
+  // money-change happened, else the approximate reference rate (a default so a
+  // foreign amount is never shown without any home context). home-minor/foreign-minor.
+  const isForeign = !!tripId && currency !== "PHP";
+  const refBasis = isForeign ? referenceCostBasis(currency, "PHP") : null;
+  const previewBasis = poolRate ?? refBasis;
+  const previewIsReference = poolRate == null && refBasis != null;
 
   const save = async () => {
     if (minor <= 0) return;
@@ -165,20 +173,20 @@ export default function NewExpense() {
           >
             {format(minor, currency)}
           </Text>
-          {tripId && currency !== "PHP" ? (
-            poolRate != null ? (
+          {isForeign ? (
+            previewBasis != null ? (
               minor > 0 ? (
                 <Text
                   className="text-carbon text-sm mt-1"
                   style={{ fontFamily: fonts.mono }}
                 >
-                  ≈ {format(Math.round(minor * poolRate), "PHP")} home
+                  ≈ {format(Math.round(minor * previewBasis), "PHP")} home
+                  {previewIsReference ? " · reference rate" : ""}
                 </Text>
               ) : null
             ) : (
               <Text className="text-amber-ink text-xs mt-1">
-                Home value pending — it's set once you record a money change for
-                this trip.
+                Home value set once you record a money change for this trip.
               </Text>
             )
           ) : null}

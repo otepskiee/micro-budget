@@ -107,6 +107,20 @@ export default function Settle() {
             </Pressable>
           ) : null}
 
+          {s.estimated > 0 ? (
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/changer/[trip]", params: { trip } })
+              }
+            >
+              <Text className="text-carbon text-xs mt-3">
+                {s.estimated} {s.estimated === 1 ? "amount uses" : "amounts use"}{" "}
+                an approximate reference rate. Record a money-change for this trip
+                to settle at your exact rate.
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Eyebrow className="mt-5 mb-1">Shared items</Eyebrow>
           {s.items.map((it, i) => (
             <View

@@ -3,7 +3,12 @@ import { clusterStays, type Point } from "../src/lib/geo/cluster";
 import { computeBalances, simplifyDebts, type SettleExpense } from "../src/lib/split/settle";
 import { poolEffectiveRate, poolDrawHome } from "../src/lib/pool";
 import { parseReceiptText } from "../src/lib/receipt/parse";
-import { splitEvenly } from "../src/lib/money";
+import { splitEvenly, convertToHome } from "../src/lib/money";
+import {
+  referenceForeignPerHome,
+  referenceCostBasis,
+  hasReference,
+} from "../src/lib/fx/reference";
 
 let pass = 0;
 let fail = 0;
@@ -70,6 +75,28 @@ ok("VND receipt merchant", (vnd.merchant ?? "").startsWith("Bún"), vnd.merchant
 const php = parseReceiptText(["Jollibee", "GRAND TOTAL   185.00"].join("\n"));
 ok("PHP receipt total 185.00 (18500 minor)", php.totalMinor === 18500, php.totalMinor);
 ok("PHP fallback currency", php.currency === "PHP", php.currency);
+
+// ---- reference (default) FX ----
+const vndPerPhp = referenceForeignPerHome("PHP", "VND");
+ok("reference PHP->VND in sane range (300..600)", vndPerPhp != null && vndPerPhp > 300 && vndPerPhp < 600, vndPerPhp);
+const phpPerVnd = referenceForeignPerHome("VND", "PHP");
+ok(
+  "reference cross-rate is reciprocal (~1)",
+  vndPerPhp != null && phpPerVnd != null && Math.abs(vndPerPhp * phpPerVnd - 1) < 1e-9,
+  vndPerPhp != null && phpPerVnd != null ? vndPerPhp * phpPerVnd : null,
+);
+// cost-basis (home-minor/foreign-minor) must agree with convertToHome via foreignPerHome
+const refBasis = referenceCostBasis("VND", "PHP")!;
+ok(
+  "reference VND->PHP cost basis matches convertToHome",
+  Math.round(90000 * refBasis) === convertToHome(90000, "VND", "PHP", vndPerPhp!),
+  { viaBasis: Math.round(90000 * refBasis), viaConvert: convertToHome(90000, "VND", "PHP", vndPerPhp!) },
+);
+ok("reference VND 90,000 lands near PHP 200 (150..260)", (() => {
+  const php = Math.round(90000 * refBasis) / 100;
+  return php > 150 && php < 260;
+})(), Math.round(90000 * refBasis) / 100);
+ok("unknown currency has no reference", !hasReference("ZZZ") && referenceCostBasis("ZZZ", "PHP") === null);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
