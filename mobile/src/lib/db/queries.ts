@@ -1,5 +1,7 @@
 import { getDb } from "./index";
 import { getMeta } from "./mutations";
+import { computeBalances, simplifyDebts, type SettleExpense } from "../split/settle";
+import { splitEvenly } from "../money";
 
 export type CatRow = {
   id: string;
@@ -140,6 +142,63 @@ export async function getTripReview(tripId: string): Promise<ReviewStay[]> {
     out.push({ ...s, expense: e ?? undefined });
   }
   return out;
+}
+
+export type Settlement = {
+  homeCurrency: string;
+  fronted: { id: string; name: string; minor: number }[];
+  transfers: { fromName: string; toName: string; amount: number }[];
+  items: { note: string | null; payerName: string; homeMinor: number }[];
+};
+
+/** Ghost-split settlement for a trip. Shared expenses split equally among the
+ * trip members, netted at each payer's home-currency estimate. */
+export async function getSettlement(tripId: string): Promise<Settlement> {
+  const db = await getDb();
+  const homeCurrency = await getMeta("home_currency", "PHP");
+  const members = await db.getAllAsync<{ id: string; name: string }>(
+    "select p.id, p.name from trip_members tm join people p on p.id = tm.person_id where tm.trip_id = ?",
+    [tripId],
+  );
+  const rows = await db.getAllAsync<{
+    id: string;
+    note: string | null;
+    amount: number;
+    paid_by: string | null;
+    est: number | null;
+  }>(
+    "select id, note, amount, paid_by, estimated_home_amount as est from expenses where trip_id = ? and deleted_at is null",
+    [tripId],
+  );
+  const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name ?? "You";
+
+  const settleExpenses: SettleExpense[] = [];
+  const items: Settlement["items"] = [];
+  for (const r of rows) {
+    if (!r.paid_by || members.length === 0) continue;
+    const homeMinor = r.est ?? r.amount; // est is home currency; fall back to raw
+    const shares = splitEvenly(homeMinor, members.length);
+    settleExpenses.push({
+      id: r.id,
+      paidBy: r.paid_by,
+      homeMinor,
+      splits: members.map((m, i) => ({ personId: m.id, shareMinor: shares[i] })),
+    });
+    items.push({ note: r.note, payerName: nameOf(r.paid_by), homeMinor });
+  }
+
+  const net = computeBalances(settleExpenses);
+  const fronted = members.map((m) => ({
+    id: m.id,
+    name: m.name,
+    minor: settleExpenses.filter((e) => e.paidBy === m.id).reduce((s, e) => s + e.homeMinor, 0),
+  }));
+  const transfers = simplifyDebts(net).map((t) => ({
+    fromName: nameOf(t.from),
+    toName: nameOf(t.to),
+    amount: t.amount,
+  }));
+  return { homeCurrency, fronted, transfers, items };
 }
 
 export async function getCategories(): Promise<{ id: string; name: string }[]> {

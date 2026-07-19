@@ -4,7 +4,7 @@ import { useFocusEffect } from "expo-router";
 import { useColorScheme } from "nativewind";
 import { Screen, Eyebrow, Ritual, Rule, DottedRule, Stamp } from "@/components/mb";
 import { useSession, signInWithEmail, signOut } from "@/lib/auth";
-import { flushOutbox } from "@/lib/sync";
+import { fullSync } from "@/lib/sync";
 import { pendingSyncCount } from "@/lib/db/queries";
 import { scheduleNightlyReview } from "@/lib/notifications";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -38,10 +38,10 @@ export default function Account() {
 
   const syncNow = async () => {
     setBusy(true);
-    const r = await flushOutbox();
+    const r = await fullSync();
     setBusy(false);
     pendingSyncCount().then(setPending);
-    Alert.alert("Sync", r.error ?? `Backed up ${r.pushed} change${r.pushed === 1 ? "" : "s"}.`);
+    Alert.alert("Sync", r.error ?? `Backed up ${r.pushed}, pulled ${r.pulled}.`);
   };
 
   return (

@@ -30,7 +30,15 @@ export default function Trips() {
     <Screen>
       <ScrollView>
         <View className="px-5 pt-2 pb-16">
-          <Ritual className="text-3xl">Trips</Ritual>
+          <View className="flex-row justify-between items-center">
+            <Ritual className="text-3xl">Trips</Ritual>
+            <Pressable
+              onPress={() => router.push("/trip/new")}
+              className="border-[1.5px] border-ink rounded-md px-3 py-2"
+            >
+              <Text className="text-ink font-bold">+ New</Text>
+            </Pressable>
+          </View>
           <Eyebrow className="mt-1">Travel mode · multi-currency</Eyebrow>
           <Rule className="mt-3" />
 
@@ -49,28 +57,44 @@ export default function Trips() {
                   <Money minor={e.amount} currency={e.currency} className="text-sm" />
                 </View>
               ))}
-              <View className="flex-row gap-2 mt-3">
-                <Pressable
-                  onPress={() => router.push({ pathname: "/review/[trip]", params: { trip: t.id } })}
-                  className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
-                >
-                  <Text className="text-ink font-bold">Nightly review</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() =>
-                    startTripTracking(t.id).then((ok) =>
-                      Alert.alert(
-                        ok ? "Tracking on" : "Location needed",
-                        ok
-                          ? "Your day will fill the trail — low-power, trip only."
-                          : "Enable location to trace this trip and catch forgotten spend.",
-                      ),
-                    )
-                  }
-                  className="border border-hair rounded-md py-2.5 px-4 items-center justify-center"
-                >
-                  <Text className="text-carbon">Track</Text>
-                </Pressable>
+              <View className="mt-3 gap-2">
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/review/[trip]", params: { trip: t.id } })}
+                    className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-ink font-bold">Nightly review</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/settle/[trip]", params: { trip: t.id } })}
+                    className="flex-1 border-[1.5px] border-ink rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-ink font-bold">Settle up</Text>
+                  </Pressable>
+                </View>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() =>
+                      startTripTracking(t.id).then((ok) =>
+                        Alert.alert(
+                          ok ? "Tracking on" : "Location needed",
+                          ok
+                            ? "Your day will fill the trail — low-power, trip only."
+                            : "Enable location to trace this trip and catch forgotten spend.",
+                        ),
+                      )
+                    }
+                    className="flex-1 border border-hair rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-carbon">Track</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/changer/[trip]", params: { trip: t.id } })}
+                    className="flex-1 border border-hair rounded-md py-2.5 items-center"
+                  >
+                    <Text className="text-carbon">Money changer</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           ))}

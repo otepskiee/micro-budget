@@ -32,9 +32,19 @@ export async function putRow(
     `insert or replace into ${table} (${cols.join(", ")}) values (${placeholders})`,
     cols.map((c) => toSqlite(row[c])),
   );
-  // Composite-key tables (splits, trip_members) have no single `id`; their sync
-  // needs onConflict handling — deferred, so they write locally but don't enqueue.
-  if (opts.sync !== false && row.id != null) await enqueue(db, table, String(row.id), "upsert", row);
+  if (opts.sync !== false) {
+    // Composite-key tables (splits, trip_members) get a composite entity id; the
+    // sync push upserts them with the right onConflict target.
+    const entityId =
+      row.id != null
+        ? String(row.id)
+        : row.expense_id != null && row.person_id != null
+          ? `${row.expense_id}:${row.person_id}`
+          : row.trip_id != null && row.person_id != null
+            ? `${row.trip_id}:${row.person_id}`
+            : JSON.stringify(row);
+    await enqueue(db, table, entityId, "upsert", row);
+  }
 }
 
 export type NewExpense = {
@@ -111,6 +121,75 @@ export async function addReceipt(r: {
     created_at: now,
     updated_at: now,
     deleted_at: null,
+  });
+  return id;
+}
+
+/** Money changer / ATM: derive the effective rate from gave-X-got-Y and open a
+ * foreign-cash pool with that cost basis. (Each change opens a pool; topping up
+ * an existing pool with a weighted-average basis is a follow-up.) */
+export async function addPoolFromChange(c: {
+  tripId: string | null;
+  gaveMinor: number;
+  gaveCurrency: string;
+  gotMinor: number;
+  gotCurrency: string;
+}): Promise<void> {
+  const db = await getDb();
+  const now = nowIso();
+  const costBasis = c.gotMinor === 0 ? 0 : c.gaveMinor / c.gotMinor; // home-minor per foreign-minor
+  const acc = uid();
+  await db.withTransactionAsync(async () => {
+    await putRow(db, "accounts", {
+      id: acc,
+      name: `${c.gotCurrency} pool`,
+      currency: c.gotCurrency,
+      type: "pool",
+      cost_basis_rate: costBasis,
+      trip_id: c.tripId,
+      archived_at: null,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    });
+    await putRow(db, "transfers", {
+      id: uid(),
+      from_account_id: null,
+      to_account_id: acc,
+      from_amount: c.gaveMinor,
+      from_currency: c.gaveCurrency,
+      to_amount: c.gotMinor,
+      to_currency: c.gotCurrency,
+      timestamp: now,
+      source: "changer",
+      settlement_status: "confirmed",
+      note: "Money changer",
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    });
+  });
+}
+
+export async function addTrip(t: { name: string; homeCurrency: string }): Promise<string> {
+  const db = await getDb();
+  const id = uid();
+  const now = nowIso();
+  await db.withTransactionAsync(async () => {
+    await putRow(db, "trips", {
+      id,
+      name: t.name,
+      start_date: null,
+      end_date: null,
+      home_currency: t.homeCurrency,
+      location_tracking_enabled: false,
+      status: "active",
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    });
+    const me = await db.getFirstAsync<{ id: string }>("select id from people where is_me = 1 limit 1");
+    if (me) await putRow(db, "trip_members", { trip_id: id, person_id: me.id });
   });
   return id;
 }

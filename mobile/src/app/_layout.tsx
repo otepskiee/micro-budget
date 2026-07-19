@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
 import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/analytics";
 import { getDb } from "@/lib/db";
@@ -12,6 +13,9 @@ import { scheduleNightlyReview } from "@/lib/notifications";
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    FragmentMono: require("../../assets/fonts/FragmentMono-Regular.ttf"),
+  });
 
   useEffect(() => {
     let alive = true;
@@ -30,7 +34,7 @@ export default function RootLayout() {
   const content = (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      {ready ? (
+      {ready && fontsLoaded ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="expense/new" options={{ presentation: "modal" }} />

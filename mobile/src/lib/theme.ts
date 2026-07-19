@@ -1,10 +1,9 @@
-import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
 
-// Real display/body faces (Bricolage / Hanken / Fragment Mono) are a follow-up —
-// they need .ttf via expo-font. For now the mono figures use the platform mono.
+// Fragment Mono carries every figure (loaded in the root layout via expo-font).
+// Display/body faces (Bricolage / Hanken) are a follow-up.
 export const fonts = {
-  mono: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  mono: "FragmentMono",
 };
 
 // Hex mirrors of the global.css tokens, for imperative needs (icons, StatusBar).

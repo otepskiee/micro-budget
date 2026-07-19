@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "./supabase";
-import { flushOutbox } from "./sync";
+import { fullSync } from "./sync";
 import { capture } from "./analytics";
 
 /** Auth is OPTIONAL. Signed-out = fully local (SQLite). Signing in turns on
@@ -23,7 +23,7 @@ export function useSession() {
       setSession(next);
       if (event === "SIGNED_IN" && next) {
         capture("signed_in");
-        void flushOutbox();
+        void fullSync(); // push local-first data up, then pull anything server-side
       }
     });
     return () => sub.subscription.unsubscribe();
