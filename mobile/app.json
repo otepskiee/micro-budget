@@ -8,6 +8,7 @@
     "scheme": "microbudget",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.otepskiee.microbudget",
       "icon": "./assets/expo.icon",
       "supportsTablet": true,
       "infoPlist": {
@@ -15,6 +16,7 @@
       }
     },
     "android": {
+      "package": "com.otepskiee.microbudget",
       "adaptiveIcon": {
         "backgroundColor": "#E3E5DE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

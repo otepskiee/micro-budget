@@ -21,23 +21,49 @@ The design it implements lives at the repo root (`../index.html`).
   in `src/global.css`, flipping with the system scheme (toggle in Account).
 - **Nightly review notification** at 8pm (`src/lib/notifications.ts`).
 
-## Run it
+## Build & run locally — no EAS (it's free)
 
-Native modules (SQLite, location, camera, notifications) need a **dev client** —
-Expo Go won't work. Local builds, no EAS (per the plan):
+Only Expo's **cloud** services (EAS Build / Submit / Update) cost money. The Expo
+CLI, the framework, and **local** native builds are free. This project uses no EAS
+— there is no `eas.json`, and the native `android/` / `ios/` folders are generated
+on demand by `expo prebuild` (they're gitignored), so a build never leaves your
+machine.
 
-```bash
-cp .env.example .env        # fill in keys (already present locally)
-npx expo run:android        # or: npx expo run:ios   (macOS)
+Native modules (SQLite, background location, camera, notifications) mean **Expo Go
+won't work** — you build a small dev client locally instead.
+
+### One-time setup (Android, on Windows)
+
+1. **JDK 17** — `java -version`. React Native 0.86 targets 17; if a Gradle build
+   fails on a newer JDK, install 17 and point `JAVA_HOME` at it.
+2. **Android Studio** → install the **Android SDK**, one SDK Platform, and a
+   device image, then expose the SDK to the CLI (PowerShell):
+   ```powershell
+   setx ANDROID_HOME "$env:LOCALAPPDATA\Android\Sdk"
+   # add platform-tools to PATH so `adb` works, then restart the terminal
+   ```
+3. `cp .env.example .env` and fill in the client keys (already present locally).
+
+### Build & run
+
+```powershell
+npm install
+npm run android            # prebuild + local Gradle build + install + start Metro
 ```
 
-Requires Android Studio + JDK 17 (Android) or Xcode (iOS). Test location/battery on
-a **physical device** — emulators lie about GPS.
+- `npm run android:release` — a local **release** APK (still 100% local, no EAS).
+- `npm start` — reconnect Metro to an already-installed dev build (no rebuild).
+- `npm run prebuild` — regenerate the native projects after editing `app.json`.
 
-Checks that pass today:
+Test GPS/battery on a **physical device** — emulators lie about location.
+
+> iOS builds need macOS + Xcode (`npm run ios`); they can't run from Windows.
+
+Checks that pass today (no device needed):
 
 ```bash
 node scripts/verify-money.mjs   # money/split correctness (16 assertions)
+npx tsx scripts/verify-logic.ts # geo/settlement/pool/OCR/FX cores (19 assertions)
 npx tsc --noEmit                # types
 npx expo-doctor                 # project health (20/20)
 ```
